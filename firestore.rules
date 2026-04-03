@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: Get user role from Firestore users collection
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    // Helper: Check if user is an admin
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+
+    // Helper: Check if user is a cashier
+    function isCashier() {
+      return isAuthenticated() && getUserRole() == 'cashier';
+    }
+
+    // Helper: Check if user is staff (admin or cashier)
+    function isStaff() {
+      return isAuthenticated() && (getUserRole() == 'admin' || getUserRole() == 'cashier');
+    }
+
+    // Helper: Get cashier's restaurant ID
+    function getCashierRestaurant() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.restaurantId;
+    }
+
+    // Users collection - Admin full access, staff can read own profile
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Shifts collection - Staff can manage own shifts, admin can read all
+    match /shifts/{shiftId} {
+      allow read: if isStaff();
+      allow create: if isStaff() && request.resource.data.userId == request.auth.uid;
+      allow update: if isStaff() && resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // Categories - Admin full access, public read for mobile app
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Menu Items - Admin full access, public read for mobile app
+    match /menuItems/{itemId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Size Options - Admin full access, public read for mobile app
+    match /sizeOptions/{sizeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Extras Options - Admin full access, public read for mobile app
+    match /extrasOptions/{extraId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Offers - Admin full access, public read for mobile app
+    match /offers/{offerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Restaurants - Admin full access, public read for mobile app
+    match /restaurants/{restaurantId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders - Admin full access, cashier read/update own restaurant orders
+    // Mobile app users can create orders.
+    match /orders/{orderId} {
+      allow read: if isAdmin() ||
+        (isCashier() && resource.data.restaurantId == getCashierRestaurant());
+      allow create: if isAuthenticated();
+      allow update: if isAdmin() ||
+        (isCashier() && resource.data.restaurantId == getCashierRestaurant());
+      allow delete: if isAdmin();
+    }
+  }
+}
