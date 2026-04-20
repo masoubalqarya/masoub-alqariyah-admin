@@ -47,10 +47,12 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-muted to-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-3">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-2xl">
-              م
-            </span>
+          <div className="mx-auto w-16 h-16 flex items-center justify-center">
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <CardTitle className="text-2xl">{t.loginTitle}</CardTitle>
           <CardDescription>{t.loginSubtitle}</CardDescription>

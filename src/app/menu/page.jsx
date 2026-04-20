@@ -104,6 +104,7 @@ export default function MenuPage() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   // Category form
   const [catDialog, setCatDialog] = useState(false);
@@ -131,6 +132,7 @@ export default function MenuPage() {
     setForm(emptyForm);
     setImageFile(null);
     setImagePreview("");
+    setError("");
     setItemDialog(true);
   };
 
@@ -148,6 +150,7 @@ export default function MenuPage() {
     });
     setImagePreview(item.image || "");
     setImageFile(null);
+    setError("");
     setItemDialog(true);
   };
 
@@ -183,6 +186,27 @@ export default function MenuPage() {
   };
 
   const handleSaveItem = async () => {
+    setError("");
+    if (!form.nameEn.trim()) {
+      setError(t.errorNameEnRequired);
+      return;
+    }
+    if (!form.nameAr.trim()) {
+      setError(t.errorNameArRequired);
+      return;
+    }
+    if (!form.category) {
+      setError(t.errorCategoryRequired);
+      return;
+    }
+    if (form.price <= 0) {
+      setError(t.errorPriceRequired);
+      return;
+    }
+    if (!imageFile && !imagePreview) {
+      setError(t.errorImageRequired);
+      return;
+    }
     setSaving(true);
     try {
       if (editingItem) {
@@ -662,11 +686,17 @@ export default function MenuPage() {
               {editingItem ? t.editMenuItem : t.addMenuItem}
             </DialogTitle>
           </DialogHeader>
+          {error && (
+            <div className="text-destructive text-sm bg-destructive/10 p-2 rounded">
+              {error}
+            </div>
+          )}
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pe-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t.nameEn}</Label>
                 <Input
+                  required
                   value={form.nameEn}
                   onChange={(e) => setForm({ ...form, nameEn: e.target.value })}
                   dir="ltr"
@@ -675,6 +705,7 @@ export default function MenuPage() {
               <div className="space-y-2">
                 <Label>{t.nameAr}</Label>
                 <Input
+                  required
                   value={form.nameAr}
                   onChange={(e) => setForm({ ...form, nameAr: e.target.value })}
                 />
@@ -685,6 +716,7 @@ export default function MenuPage() {
               <div className="space-y-2">
                 <Label>{t.price}</Label>
                 <Input
+                  required
                   type="number"
                   value={form.price}
                   onChange={(e) =>
@@ -763,6 +795,7 @@ export default function MenuPage() {
                       {t.uploadImage}
                     </span>
                     <input
+                      required={!imagePreview}
                       type="file"
                       accept="image/*"
                       className="hidden"

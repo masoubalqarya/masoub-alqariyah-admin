@@ -1,4 +1,11 @@
 const en = {
+      // Validation Errors
+    errorNameEnRequired: "English name is required",
+    errorNameArRequired: "Arabic name is required",
+    errorCategoryRequired: "Category is required",
+    errorPriceRequired: "Price must be greater than 0",
+    errorImageRequired: "Image is required",
+
   // General
   appName: "Masoub AlQarya Admin",
   save: "Save",

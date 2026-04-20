@@ -38,8 +38,12 @@ export default function Sidebar() {
     <aside className="flex flex-col h-screen w-64 bg-white border-e border-border shadow-sm fixed start-0 top-0 z-40">
       {/* Header */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-border">
-        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground font-bold text-lg">م</span>
+        <div className="w-10 h-10 flex items-center justify-center">
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="w-full h-full object-contain"
+          />
         </div>
         <div className="flex flex-col">
           <span className="font-bold text-sm text-foreground leading-tight">

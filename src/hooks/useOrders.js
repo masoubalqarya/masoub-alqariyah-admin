@@ -28,9 +28,9 @@ export function useOrders(filters) {
     if (filters?.status) {
       constraints.unshift(where("status", "==", filters.status));
     }
-    // if (filters?.restaurantId) {
-    //   constraints.unshift(where("restaurantId", "==", filters.restaurantId));
-    // }
+    if (filters?.restaurantId) {
+      constraints.unshift(where("restaurantId", "==", filters.restaurantId));
+    }
     if (filters?.dateFrom) {
       constraints.push(
         where("createdAt", ">=", Timestamp.fromDate(filters.dateFrom)),

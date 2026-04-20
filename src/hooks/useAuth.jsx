@@ -30,15 +30,6 @@ export function AuthProvider({ children }) {
           const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
           if (userDoc.exists()) {
             setUserProfile({ uid: userDoc.id, ...userDoc.data() });
-          } else {
-            // User exists in Auth but not in Firestore — treat as admin (legacy)
-            setUserProfile({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              displayName: firebaseUser.email,
-              role: "admin",
-              isActive: true,
-            });
           }
         } catch (error) {
           console.error("Error fetching user profile:", error);
@@ -69,14 +60,9 @@ export function AuthProvider({ children }) {
       }
       setUserProfile(profile);
     } else {
-      // Legacy user without profile — treat as admin
-      setUserProfile({
-        uid: credential.user.uid,
-        email: credential.user.email,
-        displayName: credential.user.email,
-        role: "admin",
-        isActive: true,
-      });
+      // User not found in users collection — deny access
+      await signOut(auth);
+      throw new Error("ACCESS_DENIED");
     }
   };
 

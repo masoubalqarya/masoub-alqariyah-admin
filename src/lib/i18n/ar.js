@@ -1,4 +1,11 @@
 const ar = {
+    // Validation Errors
+    errorNameEnRequired: "الاسم الإنجليزي مطلوب",
+    errorNameArRequired: "الاسم العربي مطلوب",
+    errorCategoryRequired: "التصنيف مطلوب",
+    errorPriceRequired: "يجب أن يكون السعر أكبر من 0",
+    errorImageRequired: "الصورة مطلوبة",
+    
   // General
   appName: "معصوب القرية - لوحة الإدارة",
   save: "حفظ",
