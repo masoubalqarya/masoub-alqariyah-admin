@@ -7,6 +7,12 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Customers (mobile/website) have no staff profile. Guard get() so a missing
+    // users/{uid} doc does not fail the whole rule evaluation.
+    function userExists() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
     // Helper: Get user role from Firestore users collection
     function getUserRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
@@ -14,20 +20,20 @@ service cloud.firestore {
 
     // Helper: Check if user is an admin
     function isAdmin() {
-      return isAuthenticated() && getUserRole() == 'admin';
+      return userExists() && getUserRole() == 'admin';
     }
 
     // Helper: Check if user is a cashier
     function isCashier() {
-      return isAuthenticated() && getUserRole() == 'cashier';
+      return userExists() && getUserRole() == 'cashier';
     }
 
     // Helper: Check if user is staff (admin or cashier)
     function isStaff() {
-      return isAuthenticated() && (getUserRole() == 'admin' || getUserRole() == 'cashier');
+      return isAdmin() || isCashier();
     }
 
-    // Helper: Get cashier's restaurant ID
+    // Helper: Get cashier's restaurant ID (only call after isCashier())
     function getCashierRestaurant() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.restaurantId;
     }
@@ -70,6 +76,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Allergies Options - Admin full access, public read for mobile app
+    match /allergiesOptions/{allergyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Offers - Admin full access, public read for mobile app
     match /offers/{offerId} {
       allow read: if true;
@@ -82,11 +94,20 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Orders - Admin full access, cashier read/update own restaurant orders
-    // Mobile app users can create orders.
+    // Customer profiles — written by mobile/website on full-account sign-up.
+    // Not the same as staff `users/{uid}`.
+    match /customers/{customerId} {
+      allow read, create, update: if isAuthenticated() && request.auth.uid == customerId;
+      allow delete: if isAdmin();
+    }
+
+    // Orders - Admin full access, cashier read/update own restaurant orders.
+    // Authenticated customers (including anonymous guests) can create orders.
+    // The creating customer can read their own order for track/history.
     match /orders/{orderId} {
       allow read: if isAdmin() ||
-        (isCashier() && resource.data.restaurantId == getCashierRestaurant());
+        (isCashier() && resource.data.restaurantId == getCashierRestaurant()) ||
+        (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated();
       allow update: if isAdmin() ||
         (isCashier() && resource.data.restaurantId == getCashierRestaurant());

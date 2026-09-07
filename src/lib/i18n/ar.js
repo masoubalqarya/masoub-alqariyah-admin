@@ -24,6 +24,7 @@ const ar = {
   loading: "جاري التحميل...",
   noData: "لا توجد بيانات",
   uploadImage: "رفع صورة",
+  optional: "اختياري",
   currency: "ر.س",
 
   // Auth
@@ -107,6 +108,29 @@ const ar = {
   confirmDeleteExtra: "هل أنت متأكد من حذف هذه الإضافة؟",
   availableExtras: "الإضافات المتاحة",
   noExtrasOptions: "لا توجد إضافات محددة بعد.",
+  availableSizes: "الأحجام المتاحة",
+  noSizeOptions: "لا توجد أحجام محددة بعد.",
+  sizeCalories: "السعرات لكل حجم (سعرة)",
+  sizePriceAdd: "إضافة الحجم (ر.س)",
+  calories: "السعرات الحرارية (سعرة)",
+  caloriesPerSize: "%{name} — السعرات (سعرة)",
+  ingredients: "المكونات",
+  allergies: "مسببات الحساسية",
+  allergiesOptions: "مسببات الحساسية",
+  addIngredient: "إضافة مكوّن",
+  addAllergy: "إضافة حساسية",
+  editAllergy: "تعديل حساسية",
+  deleteAllergy: "حذف حساسية",
+  confirmDeleteAllergy: "هل أنت متأكد من حذف مسبّب الحساسية هذا؟",
+  noIngredients: "لا توجد مكونات مدرجة.",
+  noAllergies: "لا توجد حساسية مدرجة.",
+  noAllergiesOptions: "لا توجد مسببات حساسية بعد. أضفها من تبويب مسببات الحساسية أولاً.",
+  baseAllergies: "الحساسية الأساسية",
+  triggeredAllergies: "الحساسية المرتبطة",
+  extraAllergiesHint:
+    "تظهر هذه الحساسية في الصنف فقط بعد اختيار هذه الإضافة.",
+  errorCaloriesRequired: "السعرات الحرارية الأساسية مطلوبة",
+  errorSizeCaloriesRequired: "السعرات الحرارية مطلوبة لكل حجم محدد",
 
   // Offers
   offersTitle: "إدارة العروض",

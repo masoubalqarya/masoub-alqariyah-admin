@@ -37,6 +37,11 @@ export function I18nProvider({ children }) {
   const dir = locale === "ar" ? "rtl" : "ltr";
   const t = dictionaries[locale];
 
+  useEffect(() => {
+    document.documentElement.dir = dir;
+    document.documentElement.lang = locale;
+  }, [dir, locale]);
+
   return (
     <I18nContext.Provider value={{ locale, dir, t, setLocale }}>
       {children}

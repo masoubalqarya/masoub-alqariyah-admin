@@ -55,9 +55,10 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* RTL support */
-[dir="rtl"] {
-  text-align: right;
+/* Logical alignment so table headers/cells stay on the same side in RTL and LTR */
+[dir="rtl"],
+[dir="ltr"] {
+  text-align: start;
 }
 
 /* Animations */

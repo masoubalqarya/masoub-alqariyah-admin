@@ -15,6 +15,12 @@
  */
 
 /**
+ * @typedef {Object} BilingualBullet
+ * @property {string} nameEn
+ * @property {string} nameAr
+ */
+
+/**
  * @typedef {Object} MenuItem
  * @property {string} id
  * @property {string} nameEn
@@ -25,6 +31,13 @@
  * @property {string} descriptionEn
  * @property {string} descriptionAr
  * @property {CookingOption[]} cookingOptions
+ * @property {string[]} [availableExtras]   - ids from extrasOptions
+ * @property {string[]} [availableSizes]    - ids from sizeOptions
+ * @property {Object.<string,number>} [sizeCalories] - kcal per sizeOption id
+ * @property {Object.<string,number>} [sizePriceAdd] - extra SAR per size (overrides SizeOption.priceAdd)
+ * @property {number} calories              - base kcal (required)
+ * @property {BilingualBullet[]} [ingredients]
+ * @property {string[]} [allergies]         - ids from allergiesOptions (base item)
  */
 
 /**
@@ -36,11 +49,20 @@
  */
 
 /**
+ * @typedef {Object} AllergyOption
+ * @property {string} id
+ * @property {string} nameEn
+ * @property {string} nameAr
+ */
+
+/**
  * @typedef {Object} ExtrasOption
  * @property {string} id
  * @property {string} nameEn
  * @property {string} nameAr
  * @property {number} price
+ * @property {number} [calories] - kcal added when this extra is selected
+ * @property {string[]} [allergyIds] - ids from allergiesOptions; shown on mobile only when this extra is selected
  */
 
 /**

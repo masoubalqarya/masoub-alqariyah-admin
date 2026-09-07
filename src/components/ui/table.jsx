@@ -5,7 +5,7 @@ function Table({ className, ...props }) {
   return (
     <div className="relative w-full overflow-auto">
       <table
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn("w-full caption-bottom text-sm text-start", className)}
         {...props}
       />
     </div>
@@ -38,7 +38,7 @@ function TableHead({ className, ...props }) {
   return (
     <th
       className={cn(
-        "h-10 px-2 text-start align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pe-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "h-10 px-3 py-2 text-start align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pe-0 [&>[role=checkbox]]:translate-y-[2px]",
         className,
       )}
       {...props}
@@ -50,7 +50,7 @@ function TableCell({ className, ...props }) {
   return (
     <td
       className={cn(
-        "p-2 align-middle [&:has([role=checkbox])]:pe-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "px-3 py-2 text-start align-middle [&:has([role=checkbox])]:pe-0 [&>[role=checkbox]]:translate-y-[2px]",
         className,
       )}
       {...props}

@@ -17,6 +17,10 @@ import {
   addExtrasOption,
   updateExtrasOption,
   deleteExtrasOption,
+  useAllergiesOptions,
+  addAllergyOption,
+  updateAllergyOption,
+  deleteAllergyOption,
 } from "@/hooks/useMenu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,6 +84,12 @@ const emptyForm = {
   descriptionAr: "",
   cookingOptions: [],
   availableExtras: [],
+  availableSizes: [],
+  sizeCalories: {},
+  sizePriceAdd: {},
+  calories: "",
+  ingredients: [],
+  allergies: [],
 };
 
 const emptyCooking = {
@@ -90,12 +100,18 @@ const emptyCooking = {
   isDefault: false,
 };
 
+function asIdList(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v) => typeof v === "string");
+}
+
 export default function MenuPage() {
   const { t, locale } = useI18n();
   const { items, loading: itemsLoading } = useMenuItems();
   const { categories, loading: catsLoading } = useCategories();
   const { sizes } = useSizeOptions();
   const { extras } = useExtrasOptions();
+  const { allergies: allergyOptions } = useAllergiesOptions();
 
   // Menu item form state
   const [itemDialog, setItemDialog] = useState(false);
@@ -114,7 +130,18 @@ export default function MenuPage() {
   // Extras form
   const [extDialog, setExtDialog] = useState(false);
   const [editingExt, setEditingExt] = useState(null);
-  const [extForm, setExtForm] = useState({ nameEn: "", nameAr: "", price: 0 });
+  const [extForm, setExtForm] = useState({
+    nameEn: "",
+    nameAr: "",
+    price: 0,
+    calories: "",
+    allergyIds: [],
+  });
+
+  // Allergy catalog form
+  const [algDialog, setAlgDialog] = useState(false);
+  const [editingAlg, setEditingAlg] = useState(null);
+  const [algForm, setAlgForm] = useState({ id: "", nameEn: "", nameAr: "" });
 
   // Size edit
   const [sizeEditing, setSizeEditing] = useState({});
@@ -147,6 +174,12 @@ export default function MenuPage() {
       descriptionAr: item.descriptionAr,
       cookingOptions: item.cookingOptions || [],
       availableExtras: item.availableExtras || [],
+      availableSizes: item.availableSizes || [],
+      sizeCalories: item.sizeCalories || {},
+      sizePriceAdd: item.sizePriceAdd || {},
+      calories: item.calories ?? "",
+      ingredients: item.ingredients || [],
+      allergies: asIdList(item.allergies),
     });
     setImagePreview(item.image || "");
     setImageFile(null);
@@ -203,8 +236,15 @@ export default function MenuPage() {
       setError(t.errorPriceRequired);
       return;
     }
-    if (!imageFile && !imagePreview) {
-      setError(t.errorImageRequired);
+    if (form.calories === "" || form.calories === null || Number(form.calories) < 0) {
+      setError(t.errorCaloriesRequired);
+      return;
+    }
+    const missingSizeKcal = (form.availableSizes || []).some(
+      (sId) => !form.sizeCalories?.[sId] && form.sizeCalories?.[sId] !== 0,
+    );
+    if (missingSizeKcal) {
+      setError(t.errorSizeCaloriesRequired);
       return;
     }
     setSaving(true);
@@ -212,12 +252,12 @@ export default function MenuPage() {
       if (editingItem) {
         await updateMenuItem(
           editingItem.id,
-          { ...form },
+          { ...form, allergies: asIdList(form.allergies), image: imagePreview || "" },
           imageFile || undefined,
         );
       } else {
         await addMenuItem(
-          { ...form, image: "", id: "" },
+          { ...form, allergies: asIdList(form.allergies), image: "", id: "" },
           imageFile || undefined,
         );
       }
@@ -280,29 +320,90 @@ export default function MenuPage() {
 
   const openAddExt = () => {
     setEditingExt(null);
-    setExtForm({ nameEn: "", nameAr: "", price: 0 });
+    setExtForm({ nameEn: "", nameAr: "", price: 0, calories: "", allergyIds: [] });
+    setError("");
     setExtDialog(true);
   };
 
   const openEditExt = (ext) => {
     setEditingExt(ext);
-    setExtForm({ nameEn: ext.nameEn, nameAr: ext.nameAr, price: ext.price });
+    setExtForm({
+      nameEn: ext.nameEn,
+      nameAr: ext.nameAr,
+      price: ext.price,
+      calories: ext.calories ?? "",
+      allergyIds: asIdList(ext.allergyIds),
+    });
+    setError("");
     setExtDialog(true);
   };
 
   const handleSaveExt = async () => {
+    setError("");
     setSaving(true);
     try {
+      const payload = {
+        nameEn: extForm.nameEn,
+        nameAr: extForm.nameAr,
+        price: extForm.price,
+        calories:
+          extForm.calories === "" || extForm.calories === null
+            ? 0
+            : Number(extForm.calories),
+        allergyIds: asIdList(extForm.allergyIds),
+      };
       if (editingExt) {
-        await updateExtrasOption(editingExt.id, extForm);
+        await updateExtrasOption(editingExt.id, payload);
       } else {
-        await addExtrasOption(extForm);
+        await addExtrasOption(payload);
       }
       setExtDialog(false);
     } catch (err) {
       console.error(err);
     }
     setSaving(false);
+  };
+
+  // ─── Allergy Catalog Handlers ────────────────────────────
+
+  const openAddAlg = () => {
+    setEditingAlg(null);
+    setAlgForm({ id: "", nameEn: "", nameAr: "" });
+    setAlgDialog(true);
+  };
+
+  const openEditAlg = (alg) => {
+    setEditingAlg(alg);
+    setAlgForm({ id: alg.id, nameEn: alg.nameEn, nameAr: alg.nameAr });
+    setAlgDialog(true);
+  };
+
+  const handleSaveAlg = async () => {
+    setSaving(true);
+    try {
+      if (editingAlg) {
+        await updateAllergyOption(editingAlg.id, {
+          nameEn: algForm.nameEn,
+          nameAr: algForm.nameAr,
+        });
+      } else {
+        await addAllergyOption({
+          id: algForm.id || undefined,
+          nameEn: algForm.nameEn,
+          nameAr: algForm.nameAr,
+        });
+      }
+      setAlgDialog(false);
+    } catch (err) {
+      console.error(err);
+    }
+    setSaving(false);
+  };
+
+  const allergyLabel = (id) => {
+    const alg = allergyOptions.find((a) => a.id === id);
+    if (!alg) return id;
+    return locale === "ar" ? alg.nameAr : alg.nameEn;
   };
 
   // ─── Size Handlers ───────────────────────────────────────
@@ -326,6 +427,7 @@ export default function MenuPage() {
           <TabsTrigger value="categories">{t.categories}</TabsTrigger>
           <TabsTrigger value="sizes">{t.sizeOptions}</TabsTrigger>
           <TabsTrigger value="extras">{t.extrasOptions}</TabsTrigger>
+          <TabsTrigger value="allergies">{t.allergiesOptions}</TabsTrigger>
         </TabsList>
 
         {/* ─── Menu Items Tab ────────────────────────────── */}
@@ -619,6 +721,8 @@ export default function MenuPage() {
                     <TableHead>{t.nameEn}</TableHead>
                     <TableHead>{t.nameAr}</TableHead>
                     <TableHead>{t.price} (SAR)</TableHead>
+                    <TableHead>{t.calories}</TableHead>
+                    <TableHead>{t.triggeredAllergies}</TableHead>
                     <TableHead className="w-24">{t.actions}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -628,6 +732,12 @@ export default function MenuPage() {
                       <TableCell>{ext.nameEn}</TableCell>
                       <TableCell>{ext.nameAr}</TableCell>
                       <TableCell>{ext.price}</TableCell>
+                      <TableCell>{ext.calories ?? "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {asIdList(ext.allergyIds).length
+                          ? asIdList(ext.allergyIds).map(allergyLabel).join(", ")
+                          : "—"}
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Button
@@ -661,6 +771,82 @@ export default function MenuPage() {
                                 </AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => deleteExtrasOption(ext.id)}
+                                  className="bg-destructive text-destructive-foreground">
+                                  {t.delete}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── Allergies Catalog Tab ─────────────────────── */}
+        <TabsContent value="allergies">
+          <div className="flex justify-end mb-4">
+            <Button onClick={openAddAlg}>
+              <Plus className="w-4 h-4" />
+              {t.addAllergy}
+            </Button>
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>{t.nameEn}</TableHead>
+                    <TableHead>{t.nameAr}</TableHead>
+                    <TableHead className="w-24">{t.actions}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {allergyOptions.map((alg) => (
+                    <TableRow key={alg.id}>
+                      <TableCell className="font-mono text-sm">
+                        {alg.id}
+                      </TableCell>
+                      <TableCell>{alg.nameEn}</TableCell>
+                      <TableCell>{alg.nameAr}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => openEditAlg(alg)}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  {t.deleteAllergy}
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {t.confirmDeleteAllergy}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>
+                                  {t.cancel}
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteAllergyOption(alg.id)}
                                   className="bg-destructive text-destructive-foreground">
                                   {t.delete}
                                 </AlertDialogAction>
@@ -768,9 +954,14 @@ export default function MenuPage() {
               </div>
             </div>
 
-            {/* Image Upload */}
+            {/* Image Upload (optional) */}
             <div className="space-y-2">
-              <Label>{t.image}</Label>
+              <Label>
+                {t.image}{" "}
+                <span className="text-muted-foreground font-normal">
+                  ({t.optional})
+                </span>
+              </Label>
               <div className="flex items-center gap-4">
                 {imagePreview ? (
                   <div className="relative w-24 h-24 rounded-lg overflow-hidden border">
@@ -780,6 +971,7 @@ export default function MenuPage() {
                       className="w-full h-full object-cover"
                     />
                     <button
+                      type="button"
                       onClick={() => {
                         setImagePreview("");
                         setImageFile(null);
@@ -795,7 +987,6 @@ export default function MenuPage() {
                       {t.uploadImage}
                     </span>
                     <input
-                      required={!imagePreview}
                       type="file"
                       accept="image/*"
                       className="hidden"
@@ -804,6 +995,117 @@ export default function MenuPage() {
                   </label>
                 )}
               </div>
+            </div>
+
+            {/* Base Calories */}
+            <div className="space-y-2">
+              <Label>{t.calories}</Label>
+              <Input
+                required
+                type="number"
+                min="0"
+                value={form.calories}
+                onChange={(e) => setForm({ ...form, calories: e.target.value === "" ? "" : Number(e.target.value) })}
+                dir="ltr"
+                placeholder="e.g. 450"
+              />
+            </div>
+
+            {/* Available Sizes */}
+            <div className="space-y-3">
+              <Label>{t.availableSizes}</Label>
+              {sizes.length === 0 ? (
+                <p className="text-xs text-muted-foreground">{t.noSizeOptions}</p>
+              ) : (
+                <div className="space-y-2 p-3 rounded-lg border bg-muted/30">
+                  {sizes.map((sz) => {
+                    const checked = (form.availableSizes ?? []).includes(sz.id);
+                    return (
+                      <div key={sz.id} className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 cursor-pointer flex-1">
+                          <input
+                            type="checkbox"
+                            className="rounded"
+                            checked={checked}
+                            onChange={(e) => {
+                              const current = form.availableSizes ?? [];
+                              const updated = e.target.checked
+                                ? [...current, sz.id]
+                                : current.filter((id) => id !== sz.id);
+                              // Remove kcal entry if unchecked
+                              const updatedKcal = { ...form.sizeCalories };
+                              const updatedPriceAdd = { ...form.sizePriceAdd };
+                              if (!e.target.checked) {
+                                delete updatedKcal[sz.id];
+                                delete updatedPriceAdd[sz.id];
+                              } else if (updatedPriceAdd[sz.id] === undefined) {
+                                updatedPriceAdd[sz.id] = sz.priceAdd || 0;
+                              }
+                              setForm({
+                                ...form,
+                                availableSizes: updated,
+                                sizeCalories: updatedKcal,
+                                sizePriceAdd: updatedPriceAdd,
+                              });
+                            }}
+                          />
+                          <span className="text-sm">
+                            {locale === "ar" ? sz.nameAr : sz.nameEn}
+                            {sz.priceAdd > 0 && (
+                              <span className="text-muted-foreground ms-1">(+{sz.priceAdd})</span>
+                            )}
+                          </span>
+                        </label>
+                        {checked && (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="+SAR"
+                              className="h-7 w-16 text-xs"
+                              dir="ltr"
+                              value={form.sizePriceAdd?.[sz.id] ?? ""}
+                              onChange={(e) =>
+                                setForm({
+                                  ...form,
+                                  sizePriceAdd: {
+                                    ...form.sizePriceAdd,
+                                    [sz.id]:
+                                      e.target.value === ""
+                                        ? ""
+                                        : Number(e.target.value),
+                                  },
+                                })
+                              }
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              {t.currency}
+                            </span>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="kcal"
+                              className="h-7 w-20 text-xs"
+                              dir="ltr"
+                              value={form.sizeCalories?.[sz.id] ?? ""}
+                              onChange={(e) =>
+                                setForm({
+                                  ...form,
+                                  sizeCalories: {
+                                    ...form.sizeCalories,
+                                    [sz.id]: e.target.value === "" ? "" : Number(e.target.value),
+                                  },
+                                })
+                              }
+                            />
+                            <span className="text-xs text-muted-foreground">kcal</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Available Extras */}
@@ -838,6 +1140,108 @@ export default function MenuPage() {
                             (+{ext.price})
                           </span>
                         )}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Ingredients */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>{t.ingredients}</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      ingredients: [...(form.ingredients ?? []), { nameEn: "", nameAr: "" }],
+                    })
+                  }>
+                  <Plus className="w-3 h-3" />
+                  {t.addIngredient}
+                </Button>
+              </div>
+              {(form.ingredients ?? []).length === 0 ? (
+                <p className="text-xs text-muted-foreground">{t.noIngredients}</p>
+              ) : (
+                <div className="space-y-2">
+                  {(form.ingredients ?? []).map((ing, idx) => (
+                    <div key={idx} className="grid grid-cols-5 gap-2 items-center">
+                      <div className="col-span-2">
+                        <Input
+                          value={ing.nameEn}
+                          onChange={(e) => {
+                            const updated = [...form.ingredients];
+                            updated[idx] = { ...updated[idx], nameEn: e.target.value };
+                            setForm({ ...form, ingredients: updated });
+                          }}
+                          placeholder="English"
+                          dir="ltr"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          value={ing.nameAr}
+                          onChange={(e) => {
+                            const updated = [...form.ingredients];
+                            updated[idx] = { ...updated[idx], nameAr: e.target.value };
+                            setForm({ ...form, ingredients: updated });
+                          }}
+                          placeholder="عربي"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            ingredients: form.ingredients.filter((_, i) => i !== idx),
+                          })
+                        }>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Base Allergies */}
+            <div className="space-y-3">
+              <Label>{t.baseAllergies}</Label>
+              {allergyOptions.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  {t.noAllergiesOptions}
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border bg-muted/30">
+                  {allergyOptions.map((alg) => (
+                    <label
+                      key={alg.id}
+                      className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded"
+                        checked={asIdList(form.allergies).includes(alg.id)}
+                        onChange={(e) => {
+                          const current = asIdList(form.allergies);
+                          const updated = e.target.checked
+                            ? [...current, alg.id]
+                            : current.filter((id) => id !== alg.id);
+                          setForm({ ...form, allergies: updated });
+                        }}
+                      />
+                      <span className="text-sm">
+                        {locale === "ar" ? alg.nameAr : alg.nameEn}
                       </span>
                     </label>
                   ))}
@@ -989,6 +1393,11 @@ export default function MenuPage() {
           <DialogHeader>
             <DialogTitle>{editingExt ? t.editExtra : t.addExtra}</DialogTitle>
           </DialogHeader>
+          {error && (
+            <div className="text-destructive text-sm bg-destructive/10 p-2 rounded">
+              {error}
+            </div>
+          )}
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>{t.nameEn}</Label>
@@ -1020,12 +1429,117 @@ export default function MenuPage() {
                 dir="ltr"
               />
             </div>
+            <div className="space-y-2">
+              <Label>{t.calories}</Label>
+              <Input
+                type="number"
+                min="0"
+                value={extForm.calories}
+                onChange={(e) =>
+                  setExtForm({
+                    ...extForm,
+                    calories:
+                      e.target.value === "" ? "" : Number(e.target.value),
+                  })
+                }
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t.triggeredAllergies}</Label>
+              <p className="text-xs text-muted-foreground">
+                {t.extraAllergiesHint}
+              </p>
+              {allergyOptions.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  {t.noAllergiesOptions}
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border bg-muted/30">
+                  {allergyOptions.map((alg) => (
+                    <label
+                      key={alg.id}
+                      className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded"
+                        checked={asIdList(extForm.allergyIds).includes(alg.id)}
+                        onChange={(e) => {
+                          const current = asIdList(extForm.allergyIds);
+                          const updated = e.target.checked
+                            ? [...current, alg.id]
+                            : current.filter((id) => id !== alg.id);
+                          setExtForm({ ...extForm, allergyIds: updated });
+                        }}
+                      />
+                      <span className="text-sm">
+                        {locale === "ar" ? alg.nameAr : alg.nameEn}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setExtDialog(false)}>
               {t.cancel}
             </Button>
             <Button onClick={handleSaveExt} disabled={saving}>
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {t.save}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Allergy Dialog ────────────────────────────────── */}
+      <Dialog open={algDialog} onOpenChange={setAlgDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingAlg ? t.editAllergy : t.addAllergy}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!editingAlg && (
+              <div className="space-y-2">
+                <Label>ID</Label>
+                <Input
+                  value={algForm.id}
+                  onChange={(e) =>
+                    setAlgForm({ ...algForm, id: e.target.value })
+                  }
+                  placeholder="e.g. lactose"
+                  dir="ltr"
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>{t.nameEn}</Label>
+              <Input
+                value={algForm.nameEn}
+                onChange={(e) =>
+                  setAlgForm({ ...algForm, nameEn: e.target.value })
+                }
+                dir="ltr"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t.nameAr}</Label>
+              <Input
+                value={algForm.nameAr}
+                onChange={(e) =>
+                  setAlgForm({ ...algForm, nameAr: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAlgDialog(false)}>
+              {t.cancel}
+            </Button>
+            <Button onClick={handleSaveAlg} disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {t.save}
             </Button>

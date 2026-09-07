@@ -24,6 +24,7 @@ const en = {
   loading: "Loading...",
   noData: "No data found",
   uploadImage: "Upload Image",
+  optional: "optional",
   currency: "SAR",
 
   // Auth
@@ -107,6 +108,29 @@ const en = {
   confirmDeleteExtra: "Are you sure you want to delete this extra?",
   availableExtras: "Available Extras",
   noExtrasOptions: "No extras options defined yet.",
+  availableSizes: "Available Sizes",
+  noSizeOptions: "No size options defined yet.",
+  sizeCalories: "Calories per Size (kcal)",
+  sizePriceAdd: "Size extra (SAR)",
+  calories: "Calories (kcal)",
+  caloriesPerSize: "%{name} — Calories (kcal)",
+  ingredients: "Ingredients",
+  allergies: "Allergies",
+  allergiesOptions: "Allergies",
+  addIngredient: "Add Ingredient",
+  addAllergy: "Add Allergy",
+  editAllergy: "Edit Allergy",
+  deleteAllergy: "Delete Allergy",
+  confirmDeleteAllergy: "Are you sure you want to delete this allergy?",
+  noIngredients: "No ingredients listed.",
+  noAllergies: "No allergies listed.",
+  noAllergiesOptions: "No allergies defined yet. Add them in the Allergies tab first.",
+  baseAllergies: "Base Allergies",
+  triggeredAllergies: "Triggered Allergies",
+  extraAllergiesHint:
+    "These allergies appear on the item only after this extra is selected.",
+  errorCaloriesRequired: "Base calories are required",
+  errorSizeCaloriesRequired: "Calories required for each selected size",
 
   // Offers
   offersTitle: "Offers Management",

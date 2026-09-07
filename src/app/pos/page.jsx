@@ -562,7 +562,7 @@ function OrderDetail({ order, t, locale }) {
             <div
               key={idx}
               className="flex items-center justify-between bg-gray-800 rounded-lg p-2 text-sm">
-              <div>
+              <div className="flex flex-wrap items-center gap-y-1">
                 <span className="font-medium">
                   {locale === "ar" ? item.nameAr : item.nameEn}
                 </span>
@@ -585,6 +585,14 @@ function OrderDetail({ order, t, locale }) {
                       : item.selectedCookingOption.nameEn}
                   </Badge>
                 )}
+                {item.selectedExtras?.map((ext, j) => (
+                  <Badge
+                    key={j}
+                    variant="secondary"
+                    className="ms-2 text-xs bg-gray-700">
+                    {locale === "ar" ? ext.nameAr : ext.nameEn}
+                  </Badge>
+                ))}
               </div>
               <span className="text-green-400 font-medium">
                 {formatSAR(item.subtotal)}

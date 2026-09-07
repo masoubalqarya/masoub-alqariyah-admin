@@ -185,3 +185,47 @@ export async function updateExtrasOption(id, data) {
 export async function deleteExtrasOption(id) {
   await deleteDoc(doc(db, "extrasOptions", id));
 }
+
+// ─── Allergies Options ─────────────────────────────────────
+
+export function useAllergiesOptions() {
+  const [allergies, setAllergies] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, "allergiesOptions"),
+      (snapshot) => {
+        const data = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        }));
+        setAllergies(data);
+        setLoading(false);
+      },
+    );
+    return unsubscribe;
+  }, []);
+
+  return { allergies, loading };
+}
+
+export async function addAllergyOption(alg) {
+  if (alg.id) {
+    const { setDoc } = await import("firebase/firestore");
+    const docRef = doc(db, "allergiesOptions", alg.id);
+    await setDoc(docRef, alg);
+    return alg.id;
+  }
+  const docRef = await addDoc(collection(db, "allergiesOptions"), alg);
+  await updateDoc(docRef, { id: docRef.id });
+  return docRef.id;
+}
+
+export async function updateAllergyOption(id, data) {
+  await updateDoc(doc(db, "allergiesOptions", id), data);
+}
+
+export async function deleteAllergyOption(id) {
+  await deleteDoc(doc(db, "allergiesOptions", id));
+}
