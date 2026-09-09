@@ -190,7 +190,8 @@ const ar = {
   cashier: "كاشير",
   user: "مستخدم",
   restaurant: "المطعم",
-  confirmDeleteUser: "هل أنت متأكد من حذف هذا المستخدم؟",
+  confirmDeleteUser:
+    "هل أنت متأكد من حذف هذا المستخدم؟ سيتم حذف حساب تسجيل الدخول وملف الموظف.",
   resetPassword: "إعادة تعيين كلمة المرور",
   resetPasswordConfirm: "إرسال بريد إعادة تعيين كلمة المرور لهذا المستخدم؟",
   resetPasswordSent: "تم إرسال بريد إعادة تعيين كلمة المرور",

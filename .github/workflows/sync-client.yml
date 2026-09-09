@@ -1,0 +1,59 @@
+name: Sync to Client Repository
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Verify client repository access
+        env:
+          CLIENT_GITHUB_TOKEN: ${{ secrets.CLIENT_GITHUB_TOKEN }}
+          CLIENT_REPO: masoubalqarya/masoub-alqariyah-admin
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CLIENT_GITHUB_TOKEN}" ]; then
+            echo "::error::CLIENT_GITHUB_TOKEN secret is not set in this repository."
+            exit 1
+          fi
+
+          HTTP_CODE=$(curl -s -o /tmp/repo-check.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${CLIENT_GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${CLIENT_REPO}")
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "Token can access ${CLIENT_REPO}"
+            exit 0
+          fi
+
+          echo "::error::Cannot access ${CLIENT_REPO} (HTTP ${HTTP_CODE})."
+          echo "For private repos GitHub returns 404 when the token owner cannot see the repo."
+          echo "Check: (1) repo owner/name spelling matches the URL exactly,"
+          echo "       (2) the PAT has Contents read+write on that repo,"
+          echo "       (3) the token owner is a collaborator with push access,"
+          echo "       (4) org SSO is authorized for the PAT if applicable."
+          cat /tmp/repo-check.json
+          exit 1
+
+      - name: Push to client repository
+        env:
+          CLIENT_GITHUB_TOKEN: ${{ secrets.CLIENT_GITHUB_TOKEN }}
+          CLIENT_REPO: masoubalqarya/masoub-alqariyah-admin
+        run: |
+          set -euo pipefail
+
+          git remote add client "https://x-access-token:${CLIENT_GITHUB_TOKEN}@github.com/${CLIENT_REPO}.git"
+
+          # Checkout leaves a detached HEAD; push the checked-out commit to client main.
+          git push client HEAD:refs/heads/main --force

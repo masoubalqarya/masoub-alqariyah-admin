@@ -77,6 +77,22 @@ npm install
 
 Firebase web config is currently initialized in `src/lib/firebase.js`. Ensure that file points at the correct project before running locally.
 
+Staff user **delete** also removes the Firebase Auth account. That requires the Admin SDK on the server. Add a service account to `.env.local` (never commit it):
+
+```
+FIREBASE_SERVICE_ACCOUNT='{"type":"service_account","project_id":"masoub-alqarya",...}'
+```
+
+Or split credentials:
+
+```
+FIREBASE_PROJECT_ID=masoub-alqarya
+FIREBASE_CLIENT_EMAIL=...
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+```
+
+Create the key in Firebase Console → Project settings → Service accounts → Generate new private key. Set the same env vars in Vercel for production.
+
 ### 3. Create the First Admin User
 
 The panel does not support self-registration. Staff need **both** a Firebase Auth account and a Firestore profile:
@@ -125,6 +141,7 @@ src/
 │   ├── offers/page.jsx      # Offers management
 │   ├── restaurants/page.jsx # Restaurant management
 │   ├── users/page.jsx       # Staff user management
+│   ├── api/users/[uid]/     # DELETE Auth + Firestore staff user
 │   ├── analytics/page.jsx   # Analytics with charts
 │   └── pos/page.jsx         # Cashier POS / kitchen board
 ├── components/
@@ -137,10 +154,11 @@ src/
 │   ├── useMenu.js           # Menu items, categories, sizes, extras, allergies
 │   ├── useOffers.js         # Offers CRUD + image upload
 │   ├── useRestaurants.js    # Restaurants CRUD + image upload
-│   ├── useUsers.js          # Staff users CRUD (secondary Auth app)
+│   ├── useUsers.js          # Staff users CRUD; delete via Admin API
 │   └── useShifts.js         # Clock-in / clock-out
 ├── lib/
-│   ├── firebase.js          # Firebase initialization
+│   ├── firebase.js          # Firebase client initialization
+│   ├── firebaseAdmin.js     # Admin SDK (staff Auth delete)
 │   ├── utils.js             # cn, formatSAR, order helpers
 │   └── i18n/                # Internationalization
 │       ├── index.jsx        # I18n provider
@@ -246,7 +264,8 @@ Orders are created from the **mobile app** and the **customer website**. Keep `c
 1. Push code to a Git repository (GitHub, GitLab, etc.)
 2. Go to [vercel.com](https://vercel.com) → **New Project** → Import repository
 3. Confirm Firebase config in `src/lib/firebase.js` (or migrate to env vars and set them in Vercel)
-4. Deploy — Vercel will auto-detect Next.js and build
+4. Set `FIREBASE_SERVICE_ACCOUNT` (or `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY`) so staff delete can remove Auth accounts
+5. Deploy — Vercel will auto-detect Next.js and build
 
 ```bash
 # Or deploy via CLI:

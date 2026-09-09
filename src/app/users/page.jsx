@@ -170,6 +170,7 @@ export default function UsersPage() {
       await deleteUser(deleteTarget.uid);
     } catch (error) {
       console.error("Error deleting user:", error);
+      alert(error.message);
     }
     setDeleteTarget(null);
   };

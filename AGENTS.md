@@ -58,11 +58,13 @@ When changing order fields, statuses, menu shapes, or security rules: update **a
 | Paths | `@/*` → `./src/*` (`jsconfig.json`) |
 | Styling | Tailwind CSS 4 + shadcn-style Radix UI under `src/components/ui/` |
 | Brand color | Warm earthy primary ≈ `#8A776F` (HSL in `src/app/globals.css`) |
-| Data | Firebase client SDK (`src/lib/firebase.js` — web config currently hardcoded) |
+| Data | Firebase client SDK (`src/lib/firebase.js` — web config currently hardcoded). Staff Auth delete uses Admin SDK via `src/app/api/users/[uid]/route.js` and `src/lib/firebaseAdmin.js` |
 | Charts | Recharts |
 | Icons | Lucide React |
 
 Scripts: `npm run dev` | `build` | `start` | `lint`
+
+**Client mirror:** pushes to `main` on `Hadionly/masoub-alqarya-admin-panel` sync to `masoubalqarya/masoub-alqariyah-admin` via `.github/workflows/sync-client.yml` (`CLIENT_GITHUB_TOKEN` secret).
 
 ## Roles & routing
 
@@ -95,6 +97,7 @@ Auth flow: email/password → load `users/{uid}` → deny if missing, `role === 
 - **Client-heavy:** pages and hooks are `"use client"`. Real-time data via Firestore `onSnapshot`.
 - **Data layer:** domain hooks in `src/hooks/` — prefer extending these over putting Firestore calls in page components.
   - `useAuth`, `useOrders`, `useMenu`, `useOffers`, `useRestaurants`, `useUsers`, `useShifts`
+- **Staff delete:** `deleteUser` in `useUsers` calls `DELETE /api/users/[uid]`, which removes the Firebase Auth account and the Firestore `users/{uid}` doc. Requires `FIREBASE_SERVICE_ACCOUNT` (or `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY`) on the server. Do not commit those secrets.
 - **Layout:** `providers.jsx` wraps Auth → I18n → `AppShell` (sidebar + role redirects).
 - **i18n:** `src/lib/i18n/` — dictionaries `en.js` / `ar.js`. Use logical CSS (`start`/`end`/`ms`/`me`/`border-e`), not raw `left`/`right`. Add **both** EN and AR strings for any new UI copy.
 - **UI:** reuse `src/components/ui/*`. Compose with `cn()` from `src/lib/utils.js`.
@@ -140,7 +143,8 @@ Security rules: root `firestore.rules` and `storage.rules`. Storage paths: `menu
 src/app/                 # Routes + layout + providers + globals.css
 src/components/          # AppShell, Sidebar, ui/*
 src/hooks/               # Auth + Firestore domain hooks
-src/lib/firebase.js      # Firebase init
+src/lib/firebase.js      # Firebase client init
+src/lib/firebaseAdmin.js # Admin SDK (server-only; staff Auth delete)
 src/lib/i18n/            # Locale provider + dictionaries
 src/lib/utils.js         # cn, SAR, order helpers
 src/types/index.js       # JSDoc domain models

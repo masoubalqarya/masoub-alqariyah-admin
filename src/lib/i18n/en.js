@@ -190,7 +190,8 @@ const en = {
   cashier: "Cashier",
   user: "User",
   restaurant: "Restaurant",
-  confirmDeleteUser: "Are you sure you want to delete this user?",
+  confirmDeleteUser:
+    "Are you sure you want to delete this user? This removes their login account and staff profile.",
   resetPassword: "Reset Password",
   resetPasswordConfirm: "Send a password reset email to this user?",
   resetPasswordSent: "Password reset email sent",

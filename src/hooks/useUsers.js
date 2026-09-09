@@ -8,7 +8,6 @@ import {
   doc,
   setDoc,
   updateDoc,
-  deleteDoc,
   Timestamp,
   orderBy,
 } from "firebase/firestore";
@@ -99,13 +98,25 @@ export async function updateUser(uid, data) {
 }
 
 /**
- * Delete a user profile from Firestore.
- * Note: This does not delete the Firebase Auth account (requires Admin SDK).
- * The user document is marked as deleted/inactive.
+ * Delete a staff user: Firebase Auth account + Firestore `users/{uid}`.
+ * Auth deletion requires Admin SDK, so this calls a server route.
  */
 export async function deleteUser(uid) {
-  const userRef = doc(db, "users", uid);
-  await deleteDoc(userRef);
+  const { auth } = await import("@/lib/firebase");
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) {
+    throw new Error("Not authenticated");
+  }
+
+  const res = await fetch(`/api/users/${encodeURIComponent(uid)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body.error || "Failed to delete user");
+  }
 }
 
 /**
