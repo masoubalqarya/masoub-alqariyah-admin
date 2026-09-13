@@ -274,7 +274,7 @@ export default function AnalyticsPage() {
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Orders Over Time */}
+            {/* Orders Over Time - Line Chart */}
             <Card>
               <CardHeader>
                 <CardTitle>{t.ordersOverTime}</CardTitle>
@@ -305,7 +305,7 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
 
-            {/* Revenue by Category */}
+            {/* Revenue by Category - Bar Chart */}
             <Card>
               <CardHeader>
                 <CardTitle>{t.revenueByCategory}</CardTitle>
@@ -346,7 +346,7 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
 
-            {/* Payment Breakdown */}
+            {/* Payment Breakdown - Pie Chart */}
             <Card>
               <CardHeader>
                 <CardTitle>{t.paymentBreakdown}</CardTitle>
@@ -381,7 +381,7 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
 
-            {/* Top 5 Items */}
+            {/* Top 5 Items - Bar Chart */}
             <Card>
               <CardHeader>
                 <CardTitle>{t.topItems}</CardTitle>
