@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getAdminAuth, getAdminDb } from "@/lib/firebaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,16 +10,10 @@ function jsonError(error, status) {
 
 function isCredentialError(error) {
   const message = error?.message || "";
-  const code = error?.code || "";
-  return (
-    message.includes("Firebase Admin") ||
-    message.includes("credential") ||
-    code.startsWith("app/")
-  );
+  return message.includes("Firebase Admin") || message.includes("credential");
 }
 
 async function getCaller(request) {
-  const { getAdminAuth, getAdminDb } = await import("@/lib/firebaseAdmin");
   const header = request.headers.get("authorization") || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
   if (!token) {
@@ -32,7 +27,7 @@ async function getCaller(request) {
     if (!profile || profile.role !== "admin" || profile.isActive === false) {
       return { error: jsonError("Forbidden", 403) };
     }
-    return { uid: decoded.uid, getAdminAuth, getAdminDb };
+    return { uid: decoded.uid };
   } catch (error) {
     console.error("[api/users] authorize failed:", error?.code || error?.name, error?.message);
     if (isCredentialError(error)) {
@@ -65,11 +60,8 @@ export async function DELETE(request, { params }) {
       return jsonError("You cannot delete your own account", 400);
     }
 
-    const auth = caller.getAdminAuth();
-    const db = caller.getAdminDb();
-
     try {
-      await auth.deleteUser(uid);
+      await getAdminAuth().deleteUser(uid);
     } catch (error) {
       if (error?.code !== "auth/user-not-found") {
         console.error("[api/users] Auth delete failed:", error?.code || error?.message);
@@ -78,7 +70,7 @@ export async function DELETE(request, { params }) {
     }
 
     try {
-      await db.collection("users").doc(uid).delete();
+      await getAdminDb().collection("users").doc(uid).delete();
     } catch (error) {
       console.error("[api/users] Firestore delete failed:", error?.code || error?.message);
       return jsonError(error.message || "Failed to delete user profile", 500);
