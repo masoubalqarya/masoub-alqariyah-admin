@@ -22,7 +22,8 @@ import {
   Bar,
   PieChart,
   Pie,
-  Cell,
+  Sector,
+  Rectangle,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -48,6 +49,27 @@ const CHART_COLORS = [
   "#E76F51",
   "#F4A261",
 ];
+
+const PAYMENT_COLORS = {
+  card: "#2A9D8F",
+  cash: "#E9C46A",
+};
+
+function CategoryBarShape(props) {
+  return (
+    <Rectangle
+      {...props}
+      fill={CHART_COLORS[props.index % CHART_COLORS.length]}
+    />
+  );
+}
+
+function PaymentPieShape(props) {
+  const method = props.payload?.method ?? props.method;
+  return (
+    <Sector {...props} fill={PAYMENT_COLORS[method] ?? CHART_COLORS[0]} />
+  );
+}
 
 export default function AnalyticsPage() {
   const { t, locale } = useI18n();
@@ -149,8 +171,8 @@ export default function AnalyticsPage() {
       else cash++;
     });
     return [
-      { name: t.card, value: card },
-      { name: t.cash, value: cash },
+      { name: t.card, value: card, method: "card" },
+      { name: t.cash, value: cash, method: "cash" },
     ].filter((d) => d.value > 0);
   }, [orders, t]);
 
@@ -332,14 +354,9 @@ export default function AnalyticsPage() {
                       <Bar
                         dataKey="revenue"
                         fill="#8A776F"
-                        radius={[4, 4, 0, 0]}>
-                        {revenueByCategory.map((_, idx) => (
-                          <Cell
-                            key={idx}
-                            fill={CHART_COLORS[idx % CHART_COLORS.length]}
-                          />
-                        ))}
-                      </Bar>
+                        radius={[4, 4, 0, 0]}
+                        shape={CategoryBarShape}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -369,10 +386,9 @@ export default function AnalyticsPage() {
                         }
                         outerRadius={100}
                         fill="#8884d8"
-                        dataKey="value">
-                        <Cell fill="#2A9D8F" />
-                        <Cell fill="#E9C46A" />
-                      </Pie>
+                        dataKey="value"
+                        shape={PaymentPieShape}
+                      />
                       <Tooltip />
                       <Legend />
                     </PieChart>
