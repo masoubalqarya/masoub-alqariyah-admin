@@ -17,7 +17,7 @@ See those repos’ `AGENTS.md` and `.github/copilot-instructions.md`. Same Fireb
 - Tailwind CSS 4 + Radix/shadcn UI under `src/components/ui/`
 - Brand primary ≈ `#8A776F` (`src/app/globals.css`)
 - Firebase client: `src/lib/firebase.js`
-- Staff Auth+Firestore delete: `DELETE /api/users/[uid]` + `src/lib/firebaseAdmin.js` (needs `FIREBASE_SERVICE_ACCOUNT` env; never commit keys)
+- Staff Auth+Firestore delete: `DELETE /api/users/[uid]` + `src/lib/firebaseAdmin.js` (needs `FIREBASE_SERVICE_ACCOUNT_BASE64` on Vercel; never commit keys, never `NEXT_PUBLIC_`)
 - Charts: Recharts · Icons: Lucide React
 
 Scripts: `npm run dev` | `build` | `start` | `lint`

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebaseAdmin";
 
+export const runtime = "nodejs";
+
 async function getCaller(request) {
   const header = request.headers.get("authorization") || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
@@ -17,7 +19,7 @@ async function getCaller(request) {
     }
     return { uid: decoded.uid };
   } catch (error) {
-    if (error.message?.includes("Firebase Admin credentials missing")) {
+    if (error.message?.includes("Firebase Admin")) {
       return {
         error: NextResponse.json({ error: error.message }, { status: 500 }),
       };

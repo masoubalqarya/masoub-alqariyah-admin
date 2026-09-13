@@ -97,7 +97,7 @@ Auth flow: email/password → load `users/{uid}` → deny if missing, `role === 
 - **Client-heavy:** pages and hooks are `"use client"`. Real-time data via Firestore `onSnapshot`.
 - **Data layer:** domain hooks in `src/hooks/` — prefer extending these over putting Firestore calls in page components.
   - `useAuth`, `useOrders`, `useMenu`, `useOffers`, `useRestaurants`, `useUsers`, `useShifts`
-- **Staff delete:** `deleteUser` in `useUsers` calls `DELETE /api/users/[uid]`, which removes the Firebase Auth account and the Firestore `users/{uid}` doc. Requires `FIREBASE_SERVICE_ACCOUNT` (or `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY`) on the server. Do not commit those secrets.
+- **Staff delete:** `deleteUser` in `useUsers` calls `DELETE /api/users/[uid]`, which removes the Firebase Auth account and the Firestore `users/{uid}` doc. Requires `FIREBASE_SERVICE_ACCOUNT_BASE64` on Vercel (preferred), or `FIREBASE_SERVICE_ACCOUNT` JSON / `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY` locally. Do not commit those secrets or prefix them with `NEXT_PUBLIC_`.
 - **Layout:** `providers.jsx` wraps Auth → I18n → `AppShell` (sidebar + role redirects).
 - **i18n:** `src/lib/i18n/` — dictionaries `en.js` / `ar.js`. Use logical CSS (`start`/`end`/`ms`/`me`/`border-e`), not raw `left`/`right`. Add **both** EN and AR strings for any new UI copy.
 - **UI:** reuse `src/components/ui/*`. Compose with `cn()` from `src/lib/utils.js`.

@@ -77,7 +77,21 @@ npm install
 
 Firebase web config is currently initialized in `src/lib/firebase.js`. Ensure that file points at the correct project before running locally.
 
-Staff user **delete** also removes the Firebase Auth account. That requires the Admin SDK on the server. Add a service account to `.env.local` (never commit it):
+Staff user **delete** also removes the Firebase Auth account. That requires the Admin SDK on the server (Node.js runtime, never Edge). Create a key in Firebase Console → Project settings → Service accounts → Generate new private key. Never commit it, and never use a `NEXT_PUBLIC_` prefix.
+
+**Vercel (preferred):** Vercel often mangles raw service-account JSON (`"` / newlines in `private_key`). Store a Base64 blob instead:
+
+```bash
+# macOS / Linux
+base64 -i service-account.json
+
+# Windows PowerShell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("service-account.json"))
+```
+
+Paste the output into Vercel as `FIREBASE_SERVICE_ACCOUNT_BASE64` (one line, no wrapping quotes). Redeploy after saving.
+
+**Local `.env.local`:** JSON still works:
 
 ```
 FIREBASE_SERVICE_ACCOUNT='{"type":"service_account","project_id":"masoub-alqarya",...}'
@@ -90,8 +104,6 @@ FIREBASE_PROJECT_ID=masoub-alqarya
 FIREBASE_CLIENT_EMAIL=...
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 ```
-
-Create the key in Firebase Console → Project settings → Service accounts → Generate new private key. Set the same env vars in Vercel for production.
 
 ### 3. Create the First Admin User
 
@@ -264,7 +276,7 @@ Orders are created from the **mobile app** and the **customer website**. Keep `c
 1. Push code to a Git repository (GitHub, GitLab, etc.)
 2. Go to [vercel.com](https://vercel.com) → **New Project** → Import repository
 3. Confirm Firebase config in `src/lib/firebase.js` (or migrate to env vars and set them in Vercel)
-4. Set `FIREBASE_SERVICE_ACCOUNT` (or `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PRIVATE_KEY`) so staff delete can remove Auth accounts
+4. Set `FIREBASE_SERVICE_ACCOUNT_BASE64` (base64 of the service-account JSON) so staff delete can remove Auth accounts. Raw `FIREBASE_SERVICE_ACCOUNT` JSON is unreliable on Vercel.
 5. Deploy — Vercel will auto-detect Next.js and build
 
 ```bash
