@@ -113,9 +113,15 @@ export async function deleteUser(uid) {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  const body = await res.json().catch(() => ({}));
+  const text = await res.text();
+  let body = {};
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    body = {};
+  }
   if (!res.ok) {
-    throw new Error(body.error || "Failed to delete user");
+    throw new Error(body.error || `Failed to delete user (${res.status})`);
   }
 }
 
