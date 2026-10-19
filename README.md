@@ -265,7 +265,7 @@ Customer apps should:
 1. Use `onSnapshot` to listen to `doc(db, "orders", orderId)` for live status updates
 2. Read the `status` field to display the current order stage
 3. Avoid local timer-based status progression
-4. Use Firebase Auth (email/Google, or **Anonymous Auth** for website guest checkout) to create orders — see the `orders` security rules (`userId == auth.uid` can read their own)
+4. Use Firebase Auth (email/Google, or **Anonymous Auth** for mobile and website guest checkout) to create orders — see the `orders` security rules (`userId == auth.uid` can read their own)
 
 Orders are created from the **mobile app** and the **customer website**. Keep `createOrder` payloads compatible across all three repos.
 

@@ -34,7 +34,7 @@ Currency is always **SAR (ر.س)**. Default UI locale is **Arabic RTL**; English
 | **Repo path** | `D:\Dev\React Native\clients\masoub-alqarya` |
 | **Agent docs** | `AGENTS.md` in that repo (open via multi-root workspace) |
 | **Copilot docs** | `.github/copilot-instructions.md` in that repo |
-| **Owns** | Customer ordering UI, cart, car plate, payment flow, Track Order, customer Auth → `customers/{uid}` |
+| **Owns** | Customer ordering UI, cart, car plate, payment flow, Track Order, customer Auth → `customers/{uid}` (guest checkout via anonymous auth) |
 | **Shared contract** | Same Firebase project; order statuses and `createOrder` payload must stay compatible with mobile `src/firebase/orders.js` |
 
 ## Companion customer website

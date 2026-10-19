@@ -8,7 +8,7 @@ Next.js **App Router** admin panel for **Masoub AlQarya** (معصوب القري
 
 **Companion mobile app:** `D:\Dev\React Native\clients\masoub-alqarya`  
 **Companion customer website:** `D:\Dev\Web\clients\masoub-alqarya-website`  
-See those repos’ `AGENTS.md` and `.github/copilot-instructions.md`. Same Firebase project and order status contract. Website owns marketing + web order create (`src/lib/orders.js`).
+See those repos’ `AGENTS.md` and `.github/copilot-instructions.md`. Same Firebase project and order status contract. Website owns marketing + web order create (`src/lib/orders.js`). Mobile and website guest checkout use Anonymous Auth before `createOrder`.
 
 ## Tech stack
 
