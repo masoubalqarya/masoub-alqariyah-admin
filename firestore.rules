@@ -28,11 +28,6 @@ service cloud.firestore {
       return userExists() && getUserRole() == 'cashier';
     }
 
-    // Helper: Check if user is staff (admin or cashier)
-    function isStaff() {
-      return isAdmin() || isCashier();
-    }
-
     // Helper: Get cashier's restaurant ID (only call after isCashier())
     function getCashierRestaurant() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.restaurantId;
@@ -42,14 +37,6 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
       allow create, update, delete: if isAdmin();
-    }
-
-    // Shifts collection - Staff can manage own shifts, admin can read all
-    match /shifts/{shiftId} {
-      allow read: if isStaff();
-      allow create: if isStaff() && request.resource.data.userId == request.auth.uid;
-      allow update: if isStaff() && resource.data.userId == request.auth.uid;
-      allow delete: if isAdmin();
     }
 
     // Employee attendance roster - independent of staff login accounts

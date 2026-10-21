@@ -39,5 +39,5 @@
 ## 6. Documentation and verification
 
 - Update `AGENTS.md` in the same turn as code changes, plus `README.md` and `.github/copilot-instructions.md` for the new Firestore contract and removal of clock-in/out. Keep mobile and website order contracts unchanged.
-- Run `rg` for old shift hooks, date-only overrides, and singular assignment consumers; inspect any remaining use. Run focused Node tests, targeted ESLint, editor diagnostics, `git diff --check`, and `npm run build`.
+- Run `rg` for old shift hooks, date-only overrides, and singular assignment consumers; inspect any remaining use. Run focused Node tests, targeted ESLint, editor diagnostics, and `git diff --check`. The user explicitly opted out of builds during implementation; do not run another build.
 - Confirm no new Vercel environment variable or composite Firestore index is required. Do not change `/iclock`, device serial validation, or live raw ZKTeco events. Do not run a live seed upload automatically.

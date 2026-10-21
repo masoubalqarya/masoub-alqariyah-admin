@@ -42,15 +42,15 @@ Auth: email/password → load `users/{uid}` → deny if missing, `role === "user
 | `/offers` | Offers |
 | `/restaurants` | Locations |
 | `/users` | Staff + employee roster |
-| `/attendance` | Daily prayer/shift attendance, raw punches and corrections, monthly report, shift/policy settings |
+| `/attendance` | Daily two-shift prayer attendance, raw punches and corrections, custom-range report, shift/policy settings |
 | `/analytics` | Charts |
-| `/pos` | Cashier board + shifts; order lines show size, cooking, extras |
+| `/pos` | Cashier order board; order lines show size, cooking, extras; no clock-in/out |
 | `/login` | Auth (no shell) |
 
 ## Architecture
 
 - Client-heavy `"use client"` pages; live data via Firestore `onSnapshot`
-- Domain hooks in `src/hooks/`: `useAuth`, `useOrders`, `useMenu`, `useOffers`, `useRestaurants`, `useUsers`, `useEmployees`, `useAttendance` (events/device/prayer), `useAttendanceConfig`, `useAttendanceOverrides`, `useShifts` (POS) — prefer extending these over inline Firestore in pages
+- Domain hooks in `src/hooks/`: `useAuth`, `useOrders`, `useMenu`, `useOffers`, `useRestaurants`, `useUsers`, `useEmployees`, `useAttendance` (events/device/prayer range), `useAttendanceConfig`, `useAttendanceOverrides` — prefer extending these over inline Firestore in pages
 - Layout: `providers.jsx` → Auth → I18n → `AppShell`
 - i18n: `src/lib/i18n/` (`en.js` / `ar.js`); logical CSS (`start`/`end`/`ms`/`me`), not raw `left`/`right`
 - UI: `src/components/ui/*` + `cn()` from `src/lib/utils.js`
@@ -71,17 +71,17 @@ Status updates must keep the `statusHistory` / `arrayUnion` pattern in `useOrder
 | `offers`, `restaurants` | Public read; admin write |
 | `orders` | Staff read/update; creating customer can read own (`userId == auth.uid`); authenticated create (mobile + website); admin delete |
 | `users` | Staff profiles. Helpers use `userExists()` so missing `users/{uid}` does not deny the whole rule. |
-| `shifts` | Cashier clock-in/out |
-| `employees` | Independent employee attendance roster; admin CRUD; optional `zkUserId`, shift assignment, minute offsets, weekly days off |
+| `shifts` | Historical cashier clock records; no client access or new writes |
+| `employees` | Independent employee attendance roster; admin CRUD; optional `zkUserId`, up to two `shiftIds` (Fajr/Maghrib), minute offsets, weekly days off |
 | `attendanceEvents` | Immutable raw ZKTeco or tagged synthetic demo events; server write, admin read |
 | `attendanceDevices` | ZKTeco device heartbeat/metadata; server write, admin read |
-| `shiftTemplates` | Admin-only Fajr/Maghrib attendance templates, separate from POS `shifts` |
+| `shiftTemplates` | Admin-only Fajr/Maghrib attendance templates |
 | `attendanceSettings/default` | Admin-only monthly threshold and prayer configuration |
 | `prayerTimes/{YYYY-MM-DD}` | Admin-read/server-written monthly AlAdhan cache and manual adjustments |
-| `attendanceOverrides/{employeeId}_{shiftDate}` | Admin-written corrections requiring reason; never alter raw events |
-
-Attendance demo seeding lives in `src/lib/attendance/uploadDemoSeed.js`, `src/lib/attendance/demoSeed.js`, and admin-authenticated `POST /api/attendance/demo-seed`. Users → Employees exposes a confirmation/upload action. It creates only missing tagged employees for IDs 2–10, a tagged Maghrib night shift, create-only synthetic raw events for August/September 2026 plus the current month, and a tagged sample waiver. Keep demo `source: "demo"` distinct from `/iclock` ZKTeco records; do not relax rules or overwrite real employee mappings or raw events. There is no automatic cleanup.
+| `attendanceOverrides/{employeeId}_{shiftDate}_{shiftId}` | Admin-written per-shift corrections requiring reason; legacy date-only docs remain readable; never alter raw events |
 | `customers` | Owner read/create/update (`customers/{uid}`); admin delete. Written by mobile/website on full-account sign-up. |
+
+Attendance demo seeding lives in `src/lib/attendance/uploadDemoSeed.js`, `src/lib/attendance/demoSeed.js`, and admin-authenticated `POST /api/attendance/demo-seed`. Users → Employees exposes a confirmation/upload action. It updates only tagged demo employees for IDs 2–10 to have both Fajr and Maghrib shifts, preserving the original assignment, and appends create-only synthetic events for August/September 2026 plus the current month. Keep demo `source: "demo"` distinct from `/iclock` ZKTeco records; never overwrite real mappings or existing raw events. There is no automatic cleanup.
 
 Rules: root `firestore.rules`, `storage.rules`. Storage: `menuItems/`, `offers/`, `restaurants/`.
 
@@ -92,8 +92,8 @@ Rules: root `firestore.rules`, `storage.rules`. Storage: `menuItems/`, `offers/`
 - SenseFace timestamps are local Asia/Riyadh strings and are normalized to UTC timestamps without changing `eventTimeRaw`.
 - `attendanceEvents` use deterministic hash IDs and create-only writes; never update a stored raw event.
 - `getrequest` updates `attendanceDevices.lastSeenAt` only when the heartbeat is at least five minutes stale.
-- The attendance roster is `employees`, not staff login `users` and not legacy POS `shifts`.
-- Attendance shift windows, Riyadh time, and Option B monthly deduction minutes are calculated on demand by `src/lib/attendance/calculations.js`; monthly reports count completed working shifts only. Inactive templates still calculate for already-assigned employees but cannot be newly assigned. Weekly off-days are per employee; an empty array means every day is a working day. No monetary deduction is computed.
+- The attendance roster is `employees`, not staff login `users`. `shiftIds` holds up to two required templates, one Fajr and one Maghrib; old `shiftId` remains readable as a single assignment and for legacy corrections. The old Users shift-history tab and POS clock-in/out are removed; historical `shifts` records are not deleted.
+- Attendance shift windows, Riyadh time, and Option B deduction minutes are calculated on demand by `src/lib/attendance/calculations.js`; the report defaults to the most recently completed 28th–27th period but accepts an inclusive custom 1–366-day range. It counts only completed working shifts, sums late minutes across both, and flags overlapping punch windows rather than double-counting. Inactive templates still calculate for already-assigned employees. Weekly off-days are per employee; an empty array means every day is a working day. No monetary deduction is computed.
 - `/api/attendance/prayer-times` verifies admin identity with the existing server helper, fetches AlAdhan monthly calendars (default Jeddah/method 4), caches date docs, and preserves manual overrides. Do not expose service credentials or require client auth on `/iclock`.
 
 ## Conventions

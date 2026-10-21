@@ -43,10 +43,12 @@ async function createEvent(db, zkUserId, instant) {
   }
 }
 
-async function createWaiver(db, employeeId, date, uid) {
+async function createWaiver(db, employeeId, date, shiftId, uid) {
+  const legacy = await db.collection("attendanceOverrides").doc(`${employeeId}_${date}`).get();
+  if (legacy.exists) return;
   try {
-    await db.collection("attendanceOverrides").doc(`${employeeId}_${date}`).create({
-      employeeId, shiftDate: date, type: "manual", waivedLateMinutes: 20,
+    await db.collection("attendanceOverrides").doc(`${employeeId}_${date}_${shiftId}`).create({
+      employeeId, shiftDate: date, shiftId, type: "manual", waivedLateMinutes: 20,
       reason: "Demo: approved 20-minute waiver", adjustedBy: uid,
       adjustedAt: new Date(), demoSeedId: DEMO_SEED_ID,
     });
@@ -82,12 +84,18 @@ export async function POST(request) {
     if (definition.shift === "night" && employee.shiftId !== DEMO_NIGHT_SHIFT_ID) {
       return NextResponse.json({ error: "Demo night shift was changed" }, { status: 409 });
     }
-    const shiftDoc = await db.collection("shiftTemplates").doc(employee.shiftId).get();
-    if (!shiftDoc.exists) return NextResponse.json({ error: "Assigned shift is missing" }, { status: 409 });
-    const shift = shiftDoc.data();
-    if (shift.startType !== "prayer" || shift.endType !== "fixed" ||
-      (definition.shift === "morning" && shift.endNextDay) ||
-      shift.startPrayer !== (definition.shift === "night" ? "Maghrib" : "Fajr")) {
+    const shiftIds = employee.shiftIds;
+    if (!Array.isArray(shiftIds) || shiftIds.length !== 2 ||
+      !shiftIds.includes(employee.shiftId) || new Set(shiftIds).size !== 2) {
+      return NextResponse.json({ error: "Demo employee needs two assigned shifts" }, { status: 409 });
+    }
+    const shiftDocs = await Promise.all(shiftIds.map((id) => db.collection("shiftTemplates").doc(id).get()));
+    if (shiftDocs.some((item) => !item.exists)) return NextResponse.json({ error: "Assigned shift is missing" }, { status: 409 });
+    const shifts = shiftDocs.map((item, index) => ({ id: shiftIds[index], ...item.data() }));
+    if (new Set(shifts.map((shift) => shift.startPrayer)).size !== 2 ||
+      shifts.some((shift) => shift.startType !== "prayer" || shift.endType !== "fixed") ||
+      !shifts.some((shift) => shift.id === DEMO_NIGHT_SHIFT_ID) ||
+      shifts.find((shift) => shift.id === employee.shiftId)?.startPrayer !== (definition.shift === "night" ? "Maghrib" : "Fajr")) {
       return NextResponse.json({ error: "Assigned shift is incompatible with demo data" }, { status: 409 });
     }
 
@@ -104,8 +112,11 @@ export async function POST(request) {
       const date = dates[index];
       if (!isWorkingDay(employee, date)) continue;
       if (!firstWorkingDate) firstWorkingDate = date;
-      punches.push(...planDemoPunches({ employee, shift, date,
-        prayers: prayerDocs[index].data(), workingIndex, now }));
+      for (const shift of shifts) {
+        punches.push(...planDemoPunches({ employee, shift, date,
+          prayers: prayerDocs[index].data(), workingIndex, now,
+          isSecondary: shift.id !== employee.shiftId }));
+      }
       workingIndex++;
     }
     let created = 0;
@@ -116,7 +127,7 @@ export async function POST(request) {
       created += results.filter(Boolean).length;
       existing += results.filter((result) => !result).length;
     }
-    if (zkUserId === "9" && firstWorkingDate) await createWaiver(db, employeeId, firstWorkingDate, uid);
+    if (zkUserId === "9" && firstWorkingDate) await createWaiver(db, employeeId, firstWorkingDate, employee.shiftId, uid);
     return NextResponse.json({ created, existing });
   } catch (error) {
     console.error("[attendance-demo-seed] upload failed:", error);

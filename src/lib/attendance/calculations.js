@@ -28,6 +28,34 @@ export function dateKeysInMonth(year, month) {
   );
 }
 
+function monthDateKey(year, month, day) {
+  return new Date(Date.UTC(year, month - 1, day)).toISOString().slice(0, 10);
+}
+
+export function defaultReportPeriod(today = dateKeyInRiyadh()) {
+  const [year, month, day] = today.split("-").map(Number);
+  const endMonthOffset = day >= 28 ? 0 : -1;
+  return {
+    start: monthDateKey(year, month + endMonthOffset - 1, 28),
+    end: monthDateKey(year, month + endMonthOffset, 27),
+  };
+}
+
+export function dateKeysInRange(start, end, maxDays = 366) {
+  const valid = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value || "") &&
+    !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) &&
+    new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
+  if (!valid(start) || !valid(end)) throw new Error("Invalid report date");
+  const count = Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000) + 1;
+  if (count < 1 || count > maxDays) throw new Error("Report range must be 1–366 days");
+  return Array.from({ length: count }, (_, index) => addDays(start, index));
+}
+
+export function getAssignedShiftIds(employee) {
+  const ids = Array.isArray(employee?.shiftIds) ? employee.shiftIds : employee?.shiftId ? [employee.shiftId] : [];
+  return [...new Set(ids.filter((id) => typeof id === "string" && id))];
+}
+
 export function riyadhDateTime(dateKey, time) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time || "")) {
     return null;
@@ -134,6 +162,49 @@ export function calculateDailyAttendance({ employee, shift, shiftDate, prayers, 
     lateMinutes,
     override: override || null,
     status: !firstPunch ? "absent" : lateMinutes > 0 ? "late" : "onTime",
+  };
+}
+
+export function calculateEmployeeShiftDays({ employee, shifts, shiftDate, prayers, neighborPrayers = {}, events = [], overrides = [], now = new Date() }) {
+  const windows = shifts.map((shift) => ({ shift,
+    window: calculateShiftWindow(shiftDate, shift, employee, prayers) }));
+  if (windows.some((item) => !item.window)) return [];
+  const neighbors = [-1, 1].flatMap((offset) => {
+    const date = addDays(shiftDate, offset);
+    return neighborPrayers[date] && isWorkingDay(employee, date)
+      ? shifts.map((shift) => calculateShiftWindow(date, shift, employee, neighborPrayers[date])).filter(Boolean)
+      : [];
+  });
+  const intersects = (left, right) => left.windowStart < right.windowEnd && right.windowStart < left.windowEnd;
+  return windows.map(({ shift, window }, index) => {
+    const conflict = windows.some((item, otherIndex) => otherIndex !== index && intersects(window, item.window)) ||
+      neighbors.some((neighbor) => intersects(window, neighbor));
+    if (conflict) return { employee, shift, shiftDate, ...window,
+      punches: [], punchCount: 0, firstPunch: null, lastPunch: null,
+      lateMinutes: 0, override: null, status: "conflict" };
+    const override = overrides.find((item) => item.shiftId === shift.id) ||
+      (employee.shiftId === shift.id ? overrides.find((item) => !item.shiftId) : null);
+    const day = calculateDailyAttendance({ employee, shift, shiftDate, prayers, events, override });
+    return { ...day, status: day.expectedEnd > now
+      ? day.firstPunch ? "inProgress" : "pending" : day.status };
+  });
+}
+
+export function summarizePeriodAttendance(days, thresholdMinutes) {
+  const eligible = days.filter((day) => day && !["conflict", "pending", "inProgress"].includes(day.status));
+  const totalLateMinutes = eligible.reduce((total, day) => total + day.lateMinutes, 0);
+  const threshold = Math.max(0, Number(thresholdMinutes) || 0);
+  const deductionApplies = totalLateMinutes >= threshold;
+  return {
+    workingDays: new Set(eligible.map((day) => day.shiftDate)).size,
+    scheduledShifts: eligible.length,
+    presentShifts: eligible.filter((day) => day.firstPunch).length,
+    absentShifts: eligible.filter((day) => !day.firstPunch).length,
+    lateShifts: eligible.filter((day) => day.lateMinutes > 0).length,
+    totalLateMinutes,
+    thresholdMinutes: threshold,
+    deductionApplies,
+    deductibleMinutes: deductionApplies ? totalLateMinutes : 0,
   };
 }
 

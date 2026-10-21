@@ -21,6 +21,39 @@ async function createIfMissing(ref, data) {
   });
 }
 
+async function upsertDemoEmployee(employee, morningShiftId) {
+  const ref = doc(db, "employees", demoEmployeeId(employee.zkUserId));
+  return runTransaction(db, async (transaction) => {
+    const existing = await transaction.get(ref);
+    if (existing.exists() && existing.data().demoSeedId !== DEMO_SEED_ID) {
+      throw new Error(`Existing document is not demo data: ${ref.path}`);
+    }
+    const original = existing.exists()
+      ? existing.data().shiftId || existing.data().shiftIds?.[0]
+      : employee.shift === "night" ? DEMO_NIGHT_SHIFT_ID : morningShiftId;
+    if (!original) throw new Error(`Demo employee has no original shift: ${ref.path}`);
+    const existingComplement = existing.exists()
+      ? existing.data().shiftIds?.find((id) => id !== original) : null;
+    const shiftIds = original === DEMO_NIGHT_SHIFT_ID
+      ? [original, existingComplement || morningShiftId] : [original, DEMO_NIGHT_SHIFT_ID];
+    if (existing.exists()) {
+      if (JSON.stringify(existing.data().shiftIds) !== JSON.stringify(shiftIds)) {
+        transaction.update(ref, { shiftIds, updatedAt: Timestamp.now() });
+      }
+    } else {
+      transaction.set(ref, {
+        displayName: employee.displayName, zkUserId: employee.zkUserId,
+        shiftId: original, shiftIds,
+        startOffsetMinutes: employee.startOffsetMinutes,
+        endOffsetMinutes: employee.endOffsetMinutes,
+        weeklyOffDays: employee.weeklyOffDays,
+        isActive: true, demoSeedId: DEMO_SEED_ID,
+        createdAt: seedCreatedAt, updatedAt: Timestamp.now(),
+      });
+    }
+  });
+}
+
 export async function uploadAttendanceDemoSeed(morningShiftId, onProgress) {
   const token = await auth.currentUser?.getIdToken();
   if (!token) throw new Error("Not authenticated");
@@ -40,15 +73,7 @@ export async function uploadAttendanceDemoSeed(morningShiftId, onProgress) {
   });
   for (const employee of DEMO_EMPLOYEES) {
     if (assignedIds.has(employee.zkUserId)) continue;
-    await createIfMissing(doc(db, "employees", demoEmployeeId(employee.zkUserId)), {
-      displayName: employee.displayName, zkUserId: employee.zkUserId,
-      shiftId: employee.shift === "night" ? DEMO_NIGHT_SHIFT_ID : morningShiftId,
-      startOffsetMinutes: employee.startOffsetMinutes,
-      endOffsetMinutes: employee.endOffsetMinutes,
-      weeklyOffDays: employee.weeklyOffDays,
-      isActive: true, demoSeedId: DEMO_SEED_ID,
-      createdAt: seedCreatedAt, updatedAt: Timestamp.now(),
-    });
+    await upsertDemoEmployee(employee, morningShiftId);
   }
 
   const today = dateKeyInRiyadh();

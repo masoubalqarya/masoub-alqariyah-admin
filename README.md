@@ -23,9 +23,9 @@ Companion apps (same Firebase):
 | **Offers** (`/offers`)           | Manage promotional offers with images                                    |
 | **Restaurants** (`/restaurants`) | Manage restaurant locations, open/closed toggle                          |
 | **Users** (`/users`)             | Create and manage admin/cashier staff accounts                           |
-| **Attendance** (`/attendance`)   | Prayer-based daily shifts, raw punches, manual corrections, monthly report, settings, and device status |
+| **Attendance** (`/attendance`)   | Two daily prayer-based shifts, raw punches, corrections, custom-range report, settings, and device status |
 | **Analytics** (`/analytics`)     | Charts & KPIs — orders over time, revenue, payment breakdown             |
-| **POS** (`/pos`)                 | Cashier-only kanban board for restaurant orders + shift clock-in/out     |
+| **POS** (`/pos`)                 | Cashier-only kanban board for restaurant orders                          |
 | **Login** (`/login`)             | Email/password authentication                                            |
 
 ### Roles
@@ -41,7 +41,6 @@ Companion apps (same Firebase):
 - **Bilingual UI** (Arabic RTL default + English LTR) — switchable from sidebar / POS
 - **Real-time updates** via Firestore `onSnapshot` listeners
 - **Image uploads** to Firebase Storage (`menuItems/`, `offers/`, `restaurants/`)
-- **Shift tracking** for cashiers (`shifts` collection)
 - **Employee attendance** from a ZKTeco SenseFace 2A with an independent employee roster
 - **Order status audit trail** (`statusHistory` on order updates)
 - **Responsive** design optimized for desktop/tablet
@@ -181,7 +180,6 @@ src/
 │   ├── useUsers.js          # Staff users CRUD; delete via Admin API
 │   ├── useEmployees.js      # Independent employee attendance roster
 │   ├── useAttendance.js     # Daily event aggregation + device status
-│   └── useShifts.js         # Clock-in / clock-out
 ├── lib/
 │   ├── firebase.js          # Firebase client initialization
 │   ├── firebaseAdmin.js     # Server Auth/Firestore REST helpers
@@ -209,14 +207,14 @@ src/
 | `restaurants`   | Locations and open/closed state (public read; admin write)     |
 | `orders`        | Orders from mobile, website, or staff (role-scoped read/update; creating customer can read own) |
 | `users`         | Staff profiles keyed by Auth UID                               |
-| `shifts`        | Cashier clock-in / clock-out records                           |
-| `employees`     | Independent attendance roster with optional terminal `zkUserId`, assigned shift, minute offsets, and weekly days off |
+| `shifts`        | Historical cashier clock records; no client access or new writes |
+| `employees`     | Independent attendance roster with optional terminal `zkUserId`, up to two `shiftIds`, minute offsets, and weekly days off |
 | `attendanceEvents` | Immutable raw SenseFace punches; server write, admin read   |
 | `attendanceDevices` | SenseFace model, serial, and rate-limited heartbeat        |
-| `shiftTemplates` | Admin-managed Fajr/Maghrib attendance shifts, separate from POS `shifts` |
+| `shiftTemplates` | Admin-managed Fajr/Maghrib attendance shifts |
 | `attendanceSettings/default` | Monthly lateness threshold and prayer location/method |
 | `prayerTimes/{YYYY-MM-DD}` | Server-cached AlAdhan Fajr/Maghrib times and reasoned manual overrides |
-| `attendanceOverrides/{employeeId}_{shiftDate}` | Admin corrections with reason; raw events remain immutable |
+| `attendanceOverrides/{employeeId}_{shiftDate}_{shiftId}` | Admin per-shift corrections with reason; legacy date-only corrections remain readable |
 | `customers`     | Customer profiles (`customers/{uid}`) written by mobile/website on sign-up; owner read/create/update; admin delete |
 
 ### Orders Collection Schema
@@ -256,18 +254,11 @@ Order flow: `pending` → `preparing` → `onTheWay` → `delivered` (or `cancel
   createdAt, updatedAt, createdBy?
 }
 
-// shifts/{id}
-{
-  userId, userName, restaurantId,
-  clockIn: Timestamp,
-  clockOut?: Timestamp,
-  isActive: boolean,
-}
-
 // employees/{id}
 {
   displayName: string,
   zkUserId: string | null,
+  shiftIds: string[], // optional Fajr and Maghrib assignments
   isActive: boolean,
   createdAt: Timestamp,
   updatedAt: Timestamp,
@@ -278,13 +269,15 @@ Raw `attendanceEvents` preserve the terminal row, status, verification type, wor
 
 ### Prayer-based attendance and monthly reports
 
-In Attendance Settings, create morning/evening shift templates with Fajr or Maghrib start, configurable prayer offset, fixed end, next-day flag, grace, and active state. Then assign each employee a shift in Users → Employees. Employee arrival/departure minute offsets are signed; select weekly days off (an empty selection means every calendar day works). No shift templates or assignments are seeded automatically. An employee without an assigned shift retains a raw calendar-day punch view but is not counted in calculated monthly working days. Inactive templates cannot be newly assigned but still calculate for employees already assigned to them.
+In Attendance Settings, create shift templates with Fajr or Maghrib start, configurable prayer offset, fixed end, next-day flag, grace, and active state. Assign an employee up to two required daily shifts in Users → Employees: one Fajr and one Maghrib. Employee arrival/departure minute offsets and weekly days off apply to both (an empty selection means every calendar day works). Existing `shiftId` records remain readable as one-shift assignments. Unassigned employees retain a raw calendar-day punch view but do not enter calculated reports. Inactive templates cannot be newly assigned but still calculate for employees already assigned to them.
 
-The daily view uses Asia/Riyadh `shiftDate`, not just punch calendar dates. A night shift ending at 02:00 owns its after-midnight punches. One raw punch shows no last punch. A 90-minute buffer around the expected start/end collects punches for the shift. Admins can enter a reasoned first/last punch correction or waive late minutes; raw events never change. Only completed working shifts after employee creation enter the monthly report, so an in-progress shift is not prematurely counted absent.
+The daily view uses Asia/Riyadh `shiftDate`, not just punch calendar dates, and shows one row per required shift. A night shift ending at 02:00 owns its after-midnight punches. One raw punch shows no last punch. A 90-minute buffer around each expected start/end collects punches; overlapping windows are flagged instead of double-counting. Admins can enter a shift-specific, reasoned first/last punch correction or waive late minutes; raw events never change. Not-yet-completed shifts are pending/in progress, not absent.
+
+The report defaults to the latest completed 28th–27th period. Its start/end dates are editable and inclusive (up to 366 days), including ranges crossing calendar months. Prayer times are loaded for every touched month. It counts distinct working days and completed scheduled/present/missed/late shifts after employee creation; lateness is summed across both shifts before the configured threshold is applied.
 
 The admin-authenticated prayer-time route fetches AlAdhan's monthly city calendar (default Jeddah, Saudi Arabia, Umm Al-Qura method 4) only when needed. It caches each day in `prayerTimes` and keeps manual date overrides even when the provider configuration changes. This uses the existing server credential; no new environment variable or Firestore composite index is needed. Deploy updated `firestore.rules` before opening the new admin UI.
 
-For report testing, Users → Employees has an **Upload demo attendance** button (admin only). Select an existing active Fajr morning shift and confirm. It creates a tagged Maghrib-to-02:00 demo night shift, nine tagged employees with terminal IDs 2–10, and synthetic raw punches for August and September 2026 plus the current month to date (from October 2026 onward). Scenarios include on-time/late arrivals, 59/60/78-minute monthly totals around the default threshold, absences, single punches, four-punch days, overnight departures, and a tagged 20-minute manual waiver. These are synthetic `source: "demo"` events, never sent through `/iclock`; the real device ID 1 and its events are untouched. Existing staff mappings for IDs 2–10 are skipped. Seed writes are create-only and deterministic, so retrying after an interruption is safe; there is no automatic cleanup. Demo employee `createdAt` is deliberately backdated to August 1 so both historical reports include them. No new environment variable, composite index, or rules relaxation is needed; deploy this code with the existing Firebase Admin credentials and rules.
+For report testing, Users → Employees has an **Upload demo attendance** button (admin only). Select an existing active Fajr morning shift and confirm. It creates a tagged Maghrib-to-02:00 demo night shift, up to nine tagged employees with terminal IDs 2–10 and both shift assignments, and synthetic raw punches for August and September 2026 plus the current month to date (from October 2026 onward). Rerunning the upload adds the complementary assignment and missing punches to existing tagged demo employees without changing stored raw events. Scenarios include on-time/late arrivals, 59/60/78-minute original-shift totals around the default threshold, absences, single punches, four-punch days, overnight departures, and a tagged 20-minute manual waiver. These are synthetic `source: "demo"` events, never sent through `/iclock`; the real device ID 1 and its events are untouched. Existing staff mappings for IDs 2–10 are skipped. The upload is deterministic and safe to retry; there is no automatic cleanup. Demo employee `createdAt` is backdated to August 1 so historical reports include them. No new environment variable or composite index is needed; deploy with the existing Firebase Admin credentials and updated rules.
 
 Monthly Option B uses the configured threshold (default 60 minutes): `deductionApplies = totalLateMinutes >= monthlyLateThresholdMinutes`; `deductibleMinutes = deductionApplies ? totalLateMinutes : 0`. All minutes become deductible once the threshold is met. No SAR salary calculation is performed.
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { addDays, dateKeyInRiyadh } from "@/lib/attendance/calculations";
+import { addDays, dateKeyInRiyadh, dateKeysInRange } from "@/lib/attendance/calculations";
 
 export const ATTENDANCE_DEVICE_SERIAL = "NYU7253603435";
 const CONNECTED_THRESHOLD_MS = 15 * 60 * 1000;
@@ -120,6 +120,41 @@ export function usePrayerMonth(year, month, enabled = true, configurationKey = "
       cancelled = true;
     };
   }, [year, month, enabled, configurationKey, revision, requestKey]);
+
+  return { days, loading, error, refresh: () => setRevision((value) => value + 1) };
+}
+
+export function usePrayerRange(startDate, endDate, enabled = true, configurationKey = "") {
+  const [days, setDays] = useState({});
+  const [loadedKey, setLoadedKey] = useState(null);
+  const [error, setError] = useState(null);
+  const [revision, setRevision] = useState(0);
+  const requestKey = `${startDate}|${endDate}|${configurationKey}|${revision}`;
+  const loading = enabled && loadedKey !== requestKey;
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    async function load() {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+      const months = [...new Set(dateKeysInRange(startDate, endDate, 368).map((date) => date.slice(0, 7)))];
+      const calendars = await Promise.all(months.map(async (key) => {
+        const [year, month] = key.split("-").map(Number);
+        const response = await fetch(`/api/attendance/prayer-times?year=${year}&month=${month}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error(`Prayer times request failed (${response.status})`);
+        return (await response.json()).days;
+      }));
+      return Object.fromEntries(calendars.flat().map((day) => [day.date, day]));
+    }
+    load()
+      .then((data) => { if (!cancelled) { setDays(data); setError(null); } })
+      .catch((fetchError) => { if (!cancelled) setError(fetchError); })
+      .finally(() => { if (!cancelled) setLoadedKey(requestKey); });
+    return () => { cancelled = true; };
+  }, [startDate, endDate, enabled, configurationKey, revision, requestKey]);
 
   return { days, loading, error, refresh: () => setRevision((value) => value + 1) };
 }

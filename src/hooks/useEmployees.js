@@ -15,16 +15,23 @@ import {
 
 import { db } from "@/lib/firebase";
 
-function employeePayload(data) {
+function employeePayload(data, templates) {
   const startOffsetMinutes = Number(data.startOffsetMinutes || 0);
   const endOffsetMinutes = Number(data.endOffsetMinutes || 0);
   if (![startOffsetMinutes, endOffsetMinutes].every((value) => Number.isInteger(value) && Math.abs(value) <= 1440)) {
     throw new Error("Employee offsets must be whole minutes within one day");
   }
+  const shiftIds = Array.isArray(data.shiftIds) ? data.shiftIds.filter(Boolean) : [];
+  const assigned = shiftIds.map((id) => templates.find((template) => template.id === id));
+  if (shiftIds.length > 2 || new Set(shiftIds).size !== shiftIds.length ||
+    assigned.some((shift) => !shift) ||
+    (assigned.length === 2 && new Set(assigned.map((shift) => shift.startPrayer)).size !== 2)) {
+    throw new Error("Select at most one Fajr shift and one Maghrib shift");
+  }
   return {
     displayName: data.displayName.trim(),
     zkUserId: data.zkUserId?.trim() || null,
-    shiftId: data.shiftId || null,
+    shiftIds,
     startOffsetMinutes,
     endOffsetMinutes,
     weeklyOffDays: Array.isArray(data.weeklyOffDays)
@@ -65,19 +72,19 @@ export function useEmployees() {
   return { employees, loading, error };
 }
 
-export async function createEmployee(data) {
+export async function createEmployee(data, templates) {
   const now = Timestamp.now();
   await addDoc(collection(db, "employees"), {
-    ...employeePayload(data),
+    ...employeePayload(data, templates),
     isActive: true,
     createdAt: now,
     updatedAt: now,
   });
 }
 
-export async function updateEmployee(employeeId, data) {
+export async function updateEmployee(employeeId, data, templates) {
   await updateDoc(doc(db, "employees", employeeId), {
-    ...employeePayload(data),
+    ...employeePayload(data, templates),
     updatedAt: Timestamp.now(),
   });
 }

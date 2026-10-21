@@ -22,23 +22,25 @@ export function demoDates(year, month, today) {
   return dateKeysInMonth(year, month).filter((date) => date <= today);
 }
 
-export function planDemoPunches({ employee, shift, date, prayers, workingIndex, now }) {
+export function planDemoPunches({ employee, shift, date, prayers, workingIndex, now, isSecondary = false }) {
   if (!isWorkingDay(employee, date)) return [];
   const window = calculateShiftWindow(date, shift, employee, prayers);
   if (!window) throw new Error(`Shift or prayer time missing for ${date}`);
   if (workingIndex > 0 && ((employee.zkUserId === "7" && workingIndex % 9 === 0) ||
     (employee.zkUserId === "10" && workingIndex % 7 === 0) ||
     (employee.zkUserId === "2" && workingIndex % 17 === 0))) return [];
+  if (isSecondary && employee.zkUserId === "2" && workingIndex % 13 === 5) return [];
 
   // These monthly totals deliberately straddle the default 60-minute threshold.
   const thresholdCases = { "3": 59, "4": 60, "5": 78 };
-  let lateMinutes = workingIndex === 0 ? thresholdCases[employee.zkUserId] || 0 : 0;
-  if (employee.zkUserId === "9" && workingIndex === 0) lateMinutes = 25;
-  if (employee.zkUserId === "8" && workingIndex % 8 === 4) lateMinutes = 12;
+  let lateMinutes = isSecondary ? 0 : workingIndex === 0 ? thresholdCases[employee.zkUserId] || 0 : 0;
+  if (!isSecondary && employee.zkUserId === "9" && workingIndex === 0) lateMinutes = 25;
+  if (!isSecondary && employee.zkUserId === "8" && workingIndex % 8 === 4) lateMinutes = 12;
+  if (isSecondary && employee.zkUserId === "8" && workingIndex % 11 === 4) lateMinutes = 9;
   const first = new Date(window.graceDeadline.getTime() + (lateMinutes || -4) * 60_000);
   if (first > now) return [];
   const punches = [first];
-  if (employee.zkUserId === "6" && workingIndex % 6 === 2) return punches;
+  if (employee.zkUserId === "6" && workingIndex % 6 === 2 && !isSecondary) return punches;
   const last = new Date(window.expectedEnd.getTime() - 5 * 60_000);
   if (last <= first || last > now) return punches;
   if (workingIndex % 5 === 0) {

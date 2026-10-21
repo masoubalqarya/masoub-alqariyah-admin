@@ -19,15 +19,15 @@ import {
   toggleEmployeeActive,
 } from "@/hooks/useEmployees";
 import { useRestaurants } from "@/hooks/useRestaurants";
-import { useShifts } from "@/hooks/useShifts";
 import { useAttendanceConfig } from "@/hooks/useAttendanceConfig";
+import { getAssignedShiftIds } from "@/lib/attendance/calculations";
 import { uploadAttendanceDemoSeed } from "@/lib/attendance/uploadDemoSeed";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -68,14 +68,12 @@ import {
   Trash2,
   KeyRound,
   Loader2,
-  Clock,
   ShieldCheck,
   Search,
   UserRoundCheck,
   Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 
 const ROLES = ["admin", "cashier"];
 
@@ -85,7 +83,6 @@ export default function UsersPage() {
   const { users, loading } = useUsers();
   const { employees, loading: employeesLoading } = useEmployees();
   const { restaurants } = useRestaurants();
-  const { shifts, loading: shiftsLoading } = useShifts();
   const { shifts: shiftTemplates } = useAttendanceConfig();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -119,7 +116,7 @@ export default function UsersPage() {
   const [employeeFormData, setEmployeeFormData] = useState({
     displayName: "",
     zkUserId: "",
-    shiftId: "",
+    shiftIds: [],
     startOffsetMinutes: 0,
     endOffsetMinutes: 0,
     weeklyOffDays: [],
@@ -155,7 +152,7 @@ export default function UsersPage() {
 
   const resetEmployeeForm = () => {
     setEmployeeFormData({
-      displayName: "", zkUserId: "", shiftId: "",
+      displayName: "", zkUserId: "", shiftIds: [],
       startOffsetMinutes: 0, endOffsetMinutes: 0, weeklyOffDays: [],
     });
     setEditingEmployee(null);
@@ -171,7 +168,7 @@ export default function UsersPage() {
     setEmployeeFormData({
       displayName: employee.displayName || "",
       zkUserId: employee.zkUserId || "",
-      shiftId: employee.shiftId || "",
+      shiftIds: getAssignedShiftIds(employee),
       startOffsetMinutes: employee.startOffsetMinutes || 0,
       endOffsetMinutes: employee.endOffsetMinutes || 0,
       weeklyOffDays: employee.weeklyOffDays || [],
@@ -259,9 +256,9 @@ export default function UsersPage() {
     setEmployeeSaving(true);
     try {
       if (editingEmployee) {
-        await updateEmployee(editingEmployee.id, employeeFormData);
+        await updateEmployee(editingEmployee.id, employeeFormData, shiftTemplates);
       } else {
-        await createEmployee(employeeFormData);
+        await createEmployee(employeeFormData, shiftTemplates);
       }
       setEmployeeDialogOpen(false);
       resetEmployeeForm();
@@ -323,16 +320,6 @@ export default function UsersPage() {
     );
   };
 
-  const formatShiftDuration = (shift) => {
-    if (!shift.clockIn) return "-";
-    const start = shift.clockIn.toDate();
-    const end = shift.clockOut ? shift.clockOut.toDate() : new Date();
-    const diffMs = end - start;
-    const hours = Math.floor(diffMs / 3600000);
-    const mins = Math.floor((diffMs % 3600000) / 60000);
-    return `${hours}h ${mins}m`;
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -364,10 +351,6 @@ export default function UsersPage() {
           <TabsTrigger value="employees">
             <UserRoundCheck className="w-4 h-4 me-2" />
             {t.employees}
-          </TabsTrigger>
-          <TabsTrigger value="shifts">
-            <Clock className="w-4 h-4 me-2" />
-            {t.shifts}
           </TabsTrigger>
         </TabsList>
 
@@ -534,9 +517,9 @@ export default function UsersPage() {
                           {employee.zkUserId || "--"}
                         </TableCell>
                         <TableCell>
-                          {shiftTemplates.find((shift) => shift.id === employee.shiftId)?.[
+                          {getAssignedShiftIds(employee).map((id) => shiftTemplates.find((shift) => shift.id === id)?.[
                             locale === "ar" ? "nameAr" : "nameEn"
-                          ] || "--"}
+                          ] || "--").join(" · ") || "--"}
                         </TableCell>
                         <TableCell>
                           <Switch
@@ -573,80 +556,6 @@ export default function UsersPage() {
           </Card>
         </TabsContent>
 
-        {/* Shifts Tab */}
-        <TabsContent value="shifts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                {t.shiftHistory}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t.displayName}</TableHead>
-                    <TableHead>{t.startTime}</TableHead>
-                    <TableHead>{t.endTime}</TableHead>
-                    <TableHead>{t.duration}</TableHead>
-                    <TableHead>{t.status}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {shiftsLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
-                        <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-                      </TableCell>
-                    </TableRow>
-                  ) : shifts.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="text-center py-8 text-muted-foreground">
-                        {t.noData}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    shifts.map((shift) => (
-                      <TableRow key={shift.id}>
-                        <TableCell className="font-medium">
-                          {shift.userName}
-                        </TableCell>
-                        <TableCell>
-                          {shift.clockIn
-                            ? format(shift.clockIn.toDate(), "yyyy-MM-dd HH:mm")
-                            : "-"}
-                        </TableCell>
-                        <TableCell>
-                          {shift.clockOut
-                            ? format(
-                                shift.clockOut.toDate(),
-                                "yyyy-MM-dd HH:mm",
-                              )
-                            : "-"}
-                        </TableCell>
-                        <TableCell>{formatShiftDuration(shift)}</TableCell>
-                        <TableCell>
-                          {shift.isActive ? (
-                            <Badge className="bg-green-100 text-green-800 text-xs">
-                              {t.activeShift}
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs">
-                              {t.shiftEnded}
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* Add/Edit User Dialog */}
@@ -782,24 +691,31 @@ export default function UsersPage() {
                 placeholder={t.optional}
               />
             </div>
-            <div>
-              <Label>{t.assignedShift}</Label>
-              <Select
-                value={employeeFormData.shiftId || "none"}
-                onValueChange={(value) =>
-                  setEmployeeFormData({ ...employeeFormData, shiftId: value === "none" ? "" : value })
-                }>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t.noShiftAssigned}</SelectItem>
-                  {shiftTemplates.filter((shift) => shift.active || shift.id === employeeFormData.shiftId).map((shift) => (
-                    <SelectItem key={shift.id} value={shift.id}>
-                      {locale === "ar" ? shift.nameAr : shift.nameEn}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {(["Fajr", "Maghrib"]).map((prayer) => (
+              <div key={prayer}>
+                <Label>{prayer === "Fajr" ? t.fajrShift : t.maghribShift}</Label>
+                <Select
+                  value={employeeFormData.shiftIds.find((id) => shiftTemplates.find((shift) => shift.id === id)?.startPrayer === prayer) || "none"}
+                  onValueChange={(value) => setEmployeeFormData({
+                    ...employeeFormData,
+                    shiftIds: [
+                      ...employeeFormData.shiftIds.filter((id) => shiftTemplates.find((shift) => shift.id === id)?.startPrayer !== prayer),
+                      ...(value === "none" ? [] : [value]),
+                    ],
+                  })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t.noShiftAssigned}</SelectItem>
+                    {shiftTemplates.filter((shift) => shift.startPrayer === prayer &&
+                      (shift.active || employeeFormData.shiftIds.includes(shift.id))).map((shift) => (
+                      <SelectItem key={shift.id} value={shift.id}>
+                        {locale === "ar" ? shift.nameAr : shift.nameEn}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>{t.employeeStartOffset}</Label>

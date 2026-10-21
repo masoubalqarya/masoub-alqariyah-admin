@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { calculateDailyAttendance, dateKeyInRiyadh, dateKeysInMonth, isWorkingDay } from "./calculations.js";
+import { calculateDailyAttendance, calculateEmployeeShiftDays, dateKeyInRiyadh, dateKeysInMonth, isWorkingDay, summarizePeriodAttendance } from "./calculations.js";
 import { DEMO_EMPLOYEES, planDemoPunches } from "./demoSeed.js";
 
 const prayers = { fajr: "05:00", maghrib: "18:00" };
@@ -42,4 +42,24 @@ test("incomplete future shift never receives punches", () => {
   const employee = { ...DEMO_EMPLOYEES[6], isActive: true };
   assert.deepEqual(planDemoPunches({ employee, shift: night, date: "2026-10-21", prayers,
     workingIndex: 5, now: new Date("2026-10-21T12:00:00+03:00") }), []);
+});
+
+test("both demo shifts are seeded deterministically and threshold cases remain on original shift", () => {
+  for (const [zkUserId, expected] of [["3", 59], ["4", 60], ["5", 78]]) {
+    const base = DEMO_EMPLOYEES.find((item) => item.zkUserId === zkUserId);
+    const employee = { ...base, isActive: true, shiftIds: ["morning", "night"] };
+    let workingIndex = 0;
+    const days = dateKeysInMonth(2026, 8).filter((date) => isWorkingDay(employee, date)).flatMap((date) => {
+      const index = workingIndex++;
+      const first = planDemoPunches({ employee, shift: morning, date, prayers, workingIndex: index, now });
+      const second = planDemoPunches({ employee, shift: night, date, prayers, workingIndex: index, now, isSecondary: true });
+      assert.deepEqual(second, planDemoPunches({ employee, shift: night, date, prayers, workingIndex: index, now, isSecondary: true }));
+      const events = [...first, ...second].map((instant) => ({ zkUserId,
+        eventTimeRaw: new Date(instant.getTime() + 3 * 60 * 60_000).toISOString().slice(0, 19).replace("T", " ") }));
+      return calculateEmployeeShiftDays({ employee, shifts: [{ ...morning, id: "morning" }, { ...night, id: "night" }],
+        shiftDate: date, prayers, events, now });
+    });
+    assert.equal(summarizePeriodAttendance(days, 60).totalLateMinutes, expected);
+    assert.equal(days.length, 2 * dateKeysInMonth(2026, 8).filter((date) => isWorkingDay(employee, date)).length);
+  }
 });

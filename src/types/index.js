@@ -168,7 +168,8 @@
  * @property {string} id
  * @property {string} displayName
  * @property {string | null} zkUserId
- * @property {string | null} [shiftId]
+ * @property {string[]} [shiftIds] Zero to two attendance templates, one Fajr and one Maghrib
+ * @property {string | null} [shiftId] Legacy original assignment for older records/corrections
  * @property {number} [startOffsetMinutes] Signed minutes relative to the shift start
  * @property {number} [endOffsetMinutes] Signed minutes relative to the shift end
  * @property {number[]} [weeklyOffDays] JavaScript weekday numbers, Sunday = 0
@@ -217,6 +218,7 @@
  * @typedef {Object} AttendanceOverride
  * @property {string} employeeId
  * @property {string} shiftDate YYYY-MM-DD in Asia/Riyadh
+ * @property {string} [shiftId] Attendance template; absent only on legacy corrections
  * @property {'manual'} type
  * @property {string} [adjustedFirstPunch] Riyadh local timestamp
  * @property {string} [adjustedLastPunch] Riyadh local timestamp
@@ -249,17 +251,6 @@
  * @property {'zkteco'} provider
  * @property {'SenseFace 2A'} model
  * @property {import('firebase/firestore').Timestamp} lastSeenAt
- */
-
-/**
- * @typedef {Object} Shift
- * @property {string} id
- * @property {string} userId
- * @property {string} userName
- * @property {string} restaurantId
- * @property {import('firebase/firestore').Timestamp} clockIn
- * @property {import('firebase/firestore').Timestamp} [clockOut]
- * @property {boolean} isActive
  */
 
 /**

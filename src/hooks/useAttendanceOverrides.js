@@ -42,7 +42,8 @@ export function useAttendanceOverrides(startDate, endDate, enabled = true) {
   return { overrides, loading, error, refresh: () => setRevision((value) => value + 1) };
 }
 
-export async function saveAttendanceOverride({ employeeId, shiftDate, adjustedFirstPunch, adjustedLastPunch, waivedLateMinutes, reason, adjustedBy }) {
+export async function saveAttendanceOverride({ employeeId, shiftDate, shiftId, adjustedFirstPunch, adjustedLastPunch, waivedLateMinutes, reason, adjustedBy }) {
+  if (!shiftId) throw new Error("Shift is required");
   if (!reason?.trim()) throw new Error("Adjustment reason is required");
   const waiver = Number(waivedLateMinutes || 0);
   if (!Number.isFinite(waiver) || waiver < 0 || !Number.isInteger(waiver)) {
@@ -54,9 +55,10 @@ export async function saveAttendanceOverride({ employeeId, shiftDate, adjustedFi
     ...(waiver > 0 ? { waivedLateMinutes: waiver } : {}),
   };
   if (Object.keys(corrections).length === 0) throw new Error("An adjustment is required");
-  await setDoc(doc(db, "attendanceOverrides", `${employeeId}_${shiftDate}`), {
+  await setDoc(doc(db, "attendanceOverrides", `${employeeId}_${shiftDate}_${shiftId}`), {
     employeeId,
     shiftDate,
+    shiftId,
     type: "manual",
     ...corrections,
     reason: reason.trim(),

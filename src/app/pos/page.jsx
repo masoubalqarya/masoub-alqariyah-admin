@@ -5,12 +5,10 @@ import React, {
   useEffect,
   useRef,
   useCallback,
-  useSyncExternalStore,
 } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrders, updateOrderStatus, cancelOrder } from "@/hooks/useOrders";
-import { useActiveShift, clockIn, clockOut } from "@/hooks/useShifts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,7 +29,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Clock,
   LogOut,
   Globe,
   ShoppingCart,
@@ -59,7 +56,6 @@ const KANBAN_COLUMNS = [
 export default function POSPage() {
   const { t, locale, setLocale, dir } = useI18n();
   const { user, userProfile, logout } = useAuth();
-  const { activeShift, loading: shiftLoading } = useActiveShift(user?.uid);
 
   // Filter by cashier's restaurant
   const restaurantId = userProfile?.restaurantId;
@@ -109,61 +105,6 @@ export default function POSPage() {
     }
     prevOrderCountRef.current = pendingOrders.length;
   }, [orders, soundEnabled, playNotification]);
-
-  // Shift timer — subscribe to a 1-second clock tick
-  const shiftTimerStore = useRef({ value: "", listeners: new Set() });
-  useEffect(() => {
-    const store = shiftTimerStore.current;
-    if (!activeShift) {
-      store.value = "";
-      store.listeners.forEach((l) => l());
-      return undefined;
-    }
-    const tick = () => {
-      const start = activeShift.clockIn.toDate();
-      const now = new globalThis.Date();
-      const ms = now.getTime() - start.getTime();
-      const hours = Math.floor(ms / 3600000);
-      const mins = Math.floor((ms % 3600000) / 60000);
-      const secs = Math.floor((ms % 60000) / 1000);
-      store.value = `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-      store.listeners.forEach((l) => l());
-    };
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [activeShift]);
-
-  const shiftTimer = useSyncExternalStore(
-    useCallback((onStoreChange) => {
-      const store = shiftTimerStore.current;
-      store.listeners.add(onStoreChange);
-      return () => store.listeners.delete(onStoreChange);
-    }, []),
-    () => shiftTimerStore.current.value,
-    () => "",
-  );
-
-  const handleClockIn = async () => {
-    try {
-      await clockIn(
-        user.uid,
-        userProfile?.displayName || user.email,
-        restaurantId,
-      );
-    } catch (error) {
-      console.error("Clock in error:", error);
-    }
-  };
-
-  const handleClockOut = async () => {
-    if (!activeShift) return;
-    try {
-      await clockOut(activeShift.id);
-    } catch (error) {
-      console.error("Clock out error:", error);
-    }
-  };
 
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
@@ -220,7 +161,7 @@ export default function POSPage() {
     return labels[status];
   };
 
-  if (ordersLoading || shiftLoading) {
+  if (ordersLoading) {
     return (
       <div className="pos-dark flex items-center justify-center h-screen bg-gray-950">
         <Loader2 className="w-10 h-10 animate-spin text-yellow-500" />
@@ -274,27 +215,6 @@ export default function POSPage() {
               <VolumeX className="w-5 h-5" />
             )}
           </Button>
-
-          {/* Shift button */}
-          {activeShift ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClockOut}
-              className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 gap-2">
-              <Clock className="w-4 h-4" />
-              <span className="font-mono text-xs">{shiftTimer}</span>
-              <span className="hidden sm:inline">{t.clockOut}</span>
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              onClick={handleClockIn}
-              className="bg-green-600 hover:bg-green-700 text-white gap-2">
-              <Clock className="w-4 h-4" />
-              {t.clockIn}
-            </Button>
-          )}
 
           {/* Language toggle */}
           <Button

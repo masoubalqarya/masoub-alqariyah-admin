@@ -45,5 +45,5 @@ The project has not launched. Existing employee or demo documents may be updated
 ## Validation and documentation
 
 - Unit-test 28th–27th defaults, inclusive cross-month ranges, two-shift daily calculations, overlap behavior, one missed shift, corrected late-minute summation, and idempotent demo generation.
-- Run targeted lint, the attendance test suite, and production build. Inspect the daily and report UI in both English and Arabic if a browser is available.
+- Run targeted lint and the attendance test suite. The user opted out of builds during implementation. Inspect the daily and report UI in both English and Arabic if a browser is available.
 - Update `AGENTS.md`, `README.md`, `.github/copilot-instructions.md`, JSDoc models, and locale keys with the implemented contract. Confirm no new environment variable or index is required. Do not modify `/iclock`.
