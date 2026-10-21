@@ -27,6 +27,10 @@ Next.js **App Router** admin panel for the **Masoub AlQarya** (معصوب الق
 
 Currency is always **SAR (ر.س)**. Default UI locale is **Arabic RTL**; English LTR is toggleable.
 
+## Approved implementation design
+
+The employee attendance module is designed but not yet implemented. The approved design is documented in [`docs/superpowers/specs/2026-10-21-attendance-module-design.md`](./docs/superpowers/specs/2026-10-21-attendance-module-design.md). Until implementation lands, the existing `users`, `shifts`, ZKTeco route, Firestore rules, and navigation described below remain the current behavior.
+
 ## Companion mobile app
 
 | | |
