@@ -43,13 +43,18 @@ function parseServiceAccount(raw, source) {
     const sa = JSON.parse(unwrap(stripBom(jsonText)));
     const projectId = sa.project_id?.trim();
     const clientEmail = sa.client_email?.trim();
-    const privateKey = sa.private_key ? normalizePrivateKey(sa.private_key) : "";
+    const privateKey = sa.private_key
+      ? normalizePrivateKey(sa.private_key)
+      : "";
     if (!projectId || !clientEmail || !privateKey) {
       throw new Error("missing project_id, client_email, or private_key");
     }
     return { projectId, clientEmail, privateKey };
   } catch (error) {
-    console.error(`[firebase-admin] Failed to parse ${source}:`, error?.name || error);
+    console.error(
+      `[firebase-admin] Failed to parse ${source}:`,
+      error?.name || error,
+    );
     throw new Error(
       `Firebase Admin credentials invalid (${source}). Set FIREBASE_SERVICE_ACCOUNT_BASE64 to the base64 of the service-account JSON.`,
     );
@@ -129,7 +134,10 @@ async function getAccessToken(credential) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.access_token) {
-    console.error("[firebase-admin] token exchange failed:", data.error || res.status);
+    console.error(
+      "[firebase-admin] token exchange failed:",
+      data.error || res.status,
+    );
     throw new Error(
       `Firebase Admin failed to initialize: ${data.error_description || data.error || res.status}`,
     );
@@ -152,7 +160,9 @@ async function getSecureTokenCerts() {
 
   const res = await fetch(CERTS_URL);
   if (!res.ok) {
-    throw new Error(`Firebase Admin failed to fetch token certs (${res.status})`);
+    throw new Error(
+      `Firebase Admin failed to fetch token certs (${res.status})`,
+    );
   }
   const certs = await res.json();
   const maxAge = Number(
@@ -181,7 +191,9 @@ async function verifyIdToken(idToken, credential) {
   if (payload.aud !== credential.projectId) {
     throw adminError("auth/argument-error", "Unexpected ID token audience");
   }
-  if (payload.iss !== `https://securetoken.google.com/${credential.projectId}`) {
+  if (
+    payload.iss !== `https://securetoken.google.com/${credential.projectId}`
+  ) {
     throw adminError("auth/argument-error", "Unexpected ID token issuer");
   }
 
@@ -224,20 +236,27 @@ function unwrapFirestoreValue(value) {
 
 function unwrapFirestoreFields(fields = {}) {
   return Object.fromEntries(
-    Object.entries(fields).map(([key, value]) => [key, unwrapFirestoreValue(value)]),
+    Object.entries(fields).map(([key, value]) => [
+      key,
+      unwrapFirestoreValue(value),
+    ]),
   );
 }
 
 async function firestoreGet(credential, collection, id) {
   const token = await getAccessToken(credential);
   const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(credential.projectId)}/databases/(default)/documents/${encodeURIComponent(collection)}/${encodeURIComponent(id)}`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   if (res.status === 404) {
     return { exists: false, data: () => null };
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.error?.message || `Firestore get failed (${res.status})`);
+    throw new Error(
+      data.error?.message || `Firestore get failed (${res.status})`,
+    );
   }
   return { exists: true, data: () => unwrapFirestoreFields(data.fields) };
 }
@@ -252,7 +271,9 @@ async function firestoreDelete(credential, collection, id) {
   if (res.status === 404) return;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.error?.message || `Firestore delete failed (${res.status})`);
+    throw new Error(
+      data.error?.message || `Firestore delete failed (${res.status})`,
+    );
   }
 }
 
@@ -287,12 +308,86 @@ export function getAdminAuth() {
   };
 }
 
+function toFirestoreValue(value) {
+  if (value === null || value === undefined) {
+    return { nullValue: null };
+  }
+
+  if (value instanceof Date) {
+    return { timestampValue: value.toISOString() };
+  }
+
+  if (typeof value === "string") {
+    return { stringValue: value };
+  }
+
+  if (typeof value === "boolean") {
+    return { booleanValue: value };
+  }
+
+  if (typeof value === "number") {
+    if (Number.isInteger(value)) {
+      return { integerValue: String(value) };
+    }
+
+    return { doubleValue: value };
+  }
+
+  throw new Error(`Unsupported Firestore value: ${typeof value}`);
+}
+
+async function firestoreSet(credential, collection, id, data) {
+  const token = await getAccessToken(credential);
+
+  const params = new URLSearchParams();
+
+  // Only update the supplied fields.
+  // This prevents us from deleting fields such as branchId later.
+  for (const field of Object.keys(data)) {
+    params.append("updateMask.fieldPaths", field);
+  }
+
+  const url =
+    `https://firestore.googleapis.com/v1/projects/` +
+    `${encodeURIComponent(credential.projectId)}` +
+    `/databases/(default)/documents/` +
+    `${encodeURIComponent(collection)}/` +
+    `${encodeURIComponent(id)}?${params.toString()}`;
+
+  const fields = Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [key, toFirestoreValue(value)]),
+  );
+
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ fields }),
+  });
+
+  const result = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(
+      result.error?.message || `Firestore set failed (${res.status})`,
+    );
+  }
+
+  return result;
+}
+
 export function getAdminDb() {
   const credential = requireCredential();
+
   return {
     collection: (collection) => ({
       doc: (id) => ({
         get: () => firestoreGet(credential, collection, id),
+
+        set: (data) => firestoreSet(credential, collection, id, data),
+
         delete: () => firestoreDelete(credential, collection, id),
       }),
     }),

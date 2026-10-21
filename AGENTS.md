@@ -44,10 +44,12 @@ Currency is always **SAR (ر.س)**. Default UI locale is **Arabic RTL**; English
 | **Repo path** | `D:\Dev\Web\clients\masoub-alqarya-website` |
 | **Agent docs** | `AGENTS.md` in that repo (open via multi-root workspace) |
 | **Copilot docs** | `.github/copilot-instructions.md` in that repo |
-| **Owns** | Marketing site + web drive-through ordering (guest checkout via anonymous auth; full account for `/orders`) |
+| **Owns** | Marketing site + web drive-through ordering (guest checkout via anonymous auth; full account for `/orders`); public `/privacy`, `/terms`, `/delete-account`, and `/support` pages |
 | **Shared contract** | Same Firebase project; website `src/lib/orders.js` `createOrder` must stay compatible with mobile `src/firebase/orders.js` and admin `src/types/index.js` |
 
 When changing order fields, statuses, menu shapes, or security rules: update **all three** repos’ docs and keep admin `src/types/index.js` aligned with mobile and website order writes.
+
+The customer website’s public privacy, terms, account-deletion, and support pages direct customer requests to `info@masoubalqariyah.com`. `/terms` covers both website and mobile-app use. Account deletion is currently an email-request flow; it does not call an admin-panel endpoint or change Firestore rules.
 
 ## Tech stack
 

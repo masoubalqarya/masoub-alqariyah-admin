@@ -1,0 +1,91 @@
+[debug] [2026-10-21T05:50:18.454Z] ----------------------------------------------------------------------
+[debug] [2026-10-21T05:50:18.457Z] Command:       C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\firebase-tools\lib\bin\firebase.js init
+[debug] [2026-10-21T05:50:18.457Z] CLI Version:   15.22.4
+[debug] [2026-10-21T05:50:18.457Z] Platform:      win32
+[debug] [2026-10-21T05:50:18.457Z] Node Version:  v22.17.0
+[debug] [2026-10-21T05:50:18.458Z] Detected Agent: unknown
+[debug] [2026-10-21T05:50:18.458Z] Time:          Wed Oct 21 2026 08:50:18 GMT+0300 (Arabian Standard Time)
+[debug] [2026-10-21T05:50:18.458Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-10-21T05:50:18.461Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  D:\Dev\Web\clients\masoub-alqarya-admin-panel
+
+[debug] [2026-10-21T05:52:32.627Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-10-21T05:52:32.627Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2026-10-21T05:53:39.991Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-21T05:53:39.991Z] > authorizing via signed-in user (hadieltighanidev@gmail.com)
+[debug] [2026-10-21T05:53:39.992Z] Checked if tokens are valid: false, expires at: 1792095259538
+[debug] [2026-10-21T05:53:39.992Z] Checked if tokens are valid: false, expires at: 1792095259538
+[debug] [2026-10-21T05:53:39.992Z] > refreshing access token with scopes: []
+[debug] [2026-10-21T05:53:39.994Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-10-21T05:53:39.994Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-10-21T05:53:40.253Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-10-21T05:53:40.253Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-10-21T05:53:40.434Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=100
+[debug] [2026-10-21T05:53:41.156Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2026-10-21T05:53:41.156Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[info] 
+=== Functions Setup
+[debug] [2026-10-21T05:54:49.062Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-10-21T05:54:49.063Z] > authorizing via signed-in user (hadieltighanidev@gmail.com)
+[debug] [2026-10-21T05:54:49.063Z] [iam] checking project mt-maintanence for permissions ["firebase.projects.get"]
+[debug] [2026-10-21T05:54:49.063Z] Checked if tokens are valid: true, expires at: 1792565619253
+[debug] [2026-10-21T05:54:49.063Z] Checked if tokens are valid: true, expires at: 1792565619253
+[debug] [2026-10-21T05:54:49.063Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/mt-maintanence:testIamPermissions [none]
+[debug] [2026-10-21T05:54:49.063Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/mt-maintanence:testIamPermissions  x-goog-user-project=mt-maintanence
+[debug] [2026-10-21T05:54:49.063Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/mt-maintanence:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2026-10-21T05:54:49.465Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/mt-maintanence:testIamPermissions 200
+[debug] [2026-10-21T05:54:49.465Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/mt-maintanence:testIamPermissions {"permissions":["firebase.projects.get"]}
+[info] Let's create a new codebase for your functions.
+[info] A directory corresponding to the codebase will be created in your project
+[info] with sample code pre-configured.
+
+[info] See https://firebase.google.com/docs/functions/organize-functions for
+[info] more information on organizing your functions using codebases.
+
+[info] Functions can be deployed with firebase deploy.
+
+[info] +  Wrote functions/package.json 
+[info] +  Wrote functions/index.js 
+[info] +  Wrote functions/.gitignore 
+[info] 
+=== Hosting Setup
+[info] 
+[debug] [2026-10-21T06:09:13.076Z] Checked if tokens are valid: true, expires at: 1792565619253
+[debug] [2026-10-21T06:09:13.076Z] Checked if tokens are valid: true, expires at: 1792565619253
+[debug] [2026-10-21T06:09:13.076Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/mt-maintanence [none]
+[debug] [2026-10-21T06:09:13.603Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/mt-maintanence 200
+[debug] [2026-10-21T06:09:13.604Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/mt-maintanence {"projectId":"mt-maintanence","projectNumber":"977314261036","displayName":"mt-maintanence","name":"projects/mt-maintanence","resources":{"hostingSite":"mt-maintanence"},"state":"ACTIVE","labels":{"firebase":"enabled","firebase/storage-default-bucket":"created"},"etag":"1_fab2e7b9-74bd-43e8-8536-6c38ad0b4732"}
+[info] 
+[info] Your public directory is the folder (relative to your project directory) that
+[info] will contain Hosting assets to be uploaded with firebase deploy. If you
+[info] have a build process for your assets, use your build's output directory.
+[info] 
+[debug] [2026-10-21T06:15:03.144Z] ExitPromptError: User force closed the prompt with SIGINT
+    at Interface.sigint (C:\Users\hadie\AppData\Roaming\nvm\v22.17.0\node_modules\firebase-tools\node_modules\@inquirer\core\dist\commonjs\lib\create-prompt.js:101:37)
+    at Interface.emit (node:events:518:28)
+    at [_ttyWrite] [as _ttyWrite] (node:internal/readline/interface:1132:18)
+    at ReadStream.onkeypress (node:internal/readline/interface:271:20)
+    at ReadStream.emit (node:events:530:35)
+    at emitKeys (node:internal/readline/utils:370:14)
+    at emitKeys.next (<anonymous>)
+    at ReadStream.onData (node:internal/readline/emitKeypressEvents:64:36)
+    at ReadStream.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+[error] 
+[error] Error: An unexpected error has occurred.
