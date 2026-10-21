@@ -175,6 +175,7 @@
  * @property {boolean} isActive
  * @property {import('firebase/firestore').Timestamp} createdAt
  * @property {import('firebase/firestore').Timestamp} updatedAt
+ * @property {string} [demoSeedId] Present only on seeded attendance employees
  */
 
 /**
@@ -235,10 +236,11 @@
  * @property {number | null} status
  * @property {number | null} verifyType
  * @property {string | null} workCode
- * @property {'zkteco'} source
- * @property {'SenseFace 2A'} deviceModel
+ * @property {'zkteco' | 'demo'} source
+ * @property {'SenseFace 2A' | 'Synthetic Demo'} deviceModel
  * @property {string} raw
  * @property {import('firebase/firestore').Timestamp} receivedAt
+ * @property {string} [demoSeedId] Present only on synthetic attendance events
  */
 
 /**

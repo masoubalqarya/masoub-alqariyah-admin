@@ -144,7 +144,7 @@ export default function AttendancePage() {
   }
 
   const dailyTableRows = dailyRows.map(({ employee, day }) => ({ employee, day, cells: [
-    <span key="name" className="font-medium">{employee.displayName}{day?.override && <Badge variant="secondary" className="ms-2">{t.adjusted}</Badge>}</span>,
+    <span key="name" className="font-medium">{employee.displayName}{employee.demoSeedId && <Badge variant="secondary" className="ms-2">{t.demoData}</Badge>}{day?.override && <Badge variant="secondary" className="ms-2">{t.adjusted}</Badge>}</span>,
     shiftName(day?.shift), <span key="expected" dir="ltr">{timeLabel(day?.expectedStart)}</span>,
     <span key="first" dir="ltr">{timeLabel(day?.firstPunch)}</span>,
     <span key="last" dir="ltr">{timeLabel(day?.lastPunch)}</span>,
@@ -154,7 +154,7 @@ export default function AttendancePage() {
       ? <Badge key="off" variant="secondary">{t.dayOff}</Badge> : statusBadge(day, t),
   ] }));
   const monthlyTableRows = monthlyRows.map(({ employee, summary }) => ({ employee, cells: [
-    employee.displayName, shiftName(shiftById.get(employee.shiftId)), summary.workingDays,
+    <span key="name">{employee.displayName}{employee.demoSeedId && <Badge variant="secondary" className="ms-2">{t.demoData}</Badge>}</span>, shiftName(shiftById.get(employee.shiftId)), summary.workingDays,
     summary.presentDays, summary.absentDays, summary.lateDays, summary.totalLateMinutes,
     summary.deductibleMinutes, summary.deductionApplies ? <Badge key="deduct" className="bg-amber-100 text-amber-800">{t.deductionApplies}</Badge> : t.noDeduction,
   ] }));
@@ -188,7 +188,7 @@ export default function AttendancePage() {
       {isMonthly ? selectedMonthly && <div className="space-y-3"><p className="text-sm text-muted-foreground">{t.totalLateMinutes}: {selectedMonthly.summary.totalLateMinutes} · {t.monthlyLateThreshold}: {selectedMonthly.summary.thresholdMinutes} · {t.deductibleMinutes}: {selectedMonthly.summary.deductibleMinutes}</p>{selectedMonthly.days.map((day) => <div key={day.shiftDate} className="flex items-center justify-between gap-3 border-b py-2"><span dir="ltr">{day.shiftDate}</span><span>{day.lateMinutes} {t.minutes} {day.override && <Badge variant="secondary">{t.adjusted}</Badge>}</span><span className="text-xs text-muted-foreground">{day.override ? `${t.original}: ${day.rawLateMinutes}` : ""}</span>{statusBadge(day, t)}</div>)}</div> :
         selectedDaily?.day ? <div className="space-y-4">
           <p className="text-sm text-muted-foreground">{dateKey} · {t.expectedStart}: {timeLabel(selectedDaily.day.expectedStart)} · {t.graceUntil}: {timeLabel(selectedDaily.day.graceDeadline)} · {t.ends}: {timeLabel(selectedDaily.day.expectedEnd)}</p>
-          <div className="space-y-2">{selectedDaily.day.punches.length ? selectedDaily.day.punches.map((punch) => <div key={punch.id} className="flex justify-between gap-3 rounded-lg border p-3"><span dir="ltr">{punch.eventTimeRaw}</span><span className="text-xs text-muted-foreground">{t.rawStatus}: {punch.status ?? "--"} · {t.rawVerifyType}: {punch.verifyType ?? "--"}</span></div>) : <p className="text-muted-foreground">{t.noPunches}</p>}</div>
+          <div className="space-y-2">{selectedDaily.day.punches.length ? selectedDaily.day.punches.map((punch) => <div key={punch.id} className="flex justify-between gap-3 rounded-lg border p-3"><span dir="ltr">{punch.eventTimeRaw}</span><span className="text-xs text-muted-foreground">{punch.demoSeedId && <Badge variant="secondary" className="me-2">{t.demoData}</Badge>}{t.rawStatus}: {punch.status ?? "--"} · {t.rawVerifyType}: {punch.verifyType ?? "--"}</span></div>) : <p className="text-muted-foreground">{t.noPunches}</p>}</div>
           {selectedDaily.day.override && <p className="text-sm">{t.original}: {selectedDaily.day.rawLateMinutes} {t.minutes} · {t.adjustmentReason}: {selectedDaily.day.override.reason}</p>}
           {selectedDaily.day.shift ? <div className="space-y-3 border-t pt-4"><h3 className="font-semibold">{t.manualAdjustment}</h3><div className="grid gap-3 sm:grid-cols-2"><div><Label>{t.adjustedFirstPunch}</Label><Input type="datetime-local" dir="ltr" value={adjustForm.first} onChange={(event) => setAdjustForm({ ...adjustForm, first: event.target.value })} /></div><div><Label>{t.adjustedLastPunch}</Label><Input type="datetime-local" dir="ltr" value={adjustForm.last} onChange={(event) => setAdjustForm({ ...adjustForm, last: event.target.value })} /></div></div><div><Label>{t.waivedLateMinutes}</Label><Input type="number" min="0" value={adjustForm.waived} onChange={(event) => setAdjustForm({ ...adjustForm, waived: event.target.value })} /></div><div><Label>{t.adjustmentReason}</Label><Textarea value={adjustForm.reason} onChange={(event) => setAdjustForm({ ...adjustForm, reason: event.target.value })} /></div><p className="text-xs text-muted-foreground">{t.rawEventsUnchanged}</p>{actionError && <p className="text-sm text-destructive">{actionError}</p>}<DialogFooter><Button onClick={saveAdjustment} disabled={saving}>{t.saveAdjustment}</Button></DialogFooter></div> : <p className="text-sm text-muted-foreground">{t.noShiftAssigned}</p>}
         </div> : <p className="text-muted-foreground">{t.noShiftAssigned}</p>}

@@ -73,12 +73,14 @@ Status updates must keep the `statusHistory` / `arrayUnion` pattern in `useOrder
 | `users` | Staff profiles. Helpers use `userExists()` so missing `users/{uid}` does not deny the whole rule. |
 | `shifts` | Cashier clock-in/out |
 | `employees` | Independent employee attendance roster; admin CRUD; optional `zkUserId`, shift assignment, minute offsets, weekly days off |
-| `attendanceEvents` | Immutable raw ZKTeco events; server write, admin read |
+| `attendanceEvents` | Immutable raw ZKTeco or tagged synthetic demo events; server write, admin read |
 | `attendanceDevices` | ZKTeco device heartbeat/metadata; server write, admin read |
 | `shiftTemplates` | Admin-only Fajr/Maghrib attendance templates, separate from POS `shifts` |
 | `attendanceSettings/default` | Admin-only monthly threshold and prayer configuration |
 | `prayerTimes/{YYYY-MM-DD}` | Admin-read/server-written monthly AlAdhan cache and manual adjustments |
 | `attendanceOverrides/{employeeId}_{shiftDate}` | Admin-written corrections requiring reason; never alter raw events |
+
+Attendance demo seeding lives in `src/lib/attendance/uploadDemoSeed.js`, `src/lib/attendance/demoSeed.js`, and admin-authenticated `POST /api/attendance/demo-seed`. Users → Employees exposes a confirmation/upload action. It creates only missing tagged employees for IDs 2–10, a tagged Maghrib night shift, create-only synthetic raw events for August/September 2026 plus the current month, and a tagged sample waiver. Keep demo `source: "demo"` distinct from `/iclock` ZKTeco records; do not relax rules or overwrite real employee mappings or raw events. There is no automatic cleanup.
 | `customers` | Owner read/create/update (`customers/{uid}`); admin delete. Written by mobile/website on full-account sign-up. |
 
 Rules: root `firestore.rules`, `storage.rules`. Storage: `menuItems/`, `offers/`, `restaurants/`.

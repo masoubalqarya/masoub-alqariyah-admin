@@ -213,6 +213,16 @@ const ar = {
   employeeAttendanceHint: "إدارة الموظفين وربطهم بجهاز الحضور.",
   noEmployees: "لم تتم إضافة موظفين بعد.",
   confirmDeleteEmployee: "هل أنت متأكد من حذف هذا الموظف؟",
+  uploadDemoAttendance: "رفع بيانات حضور تجريبية",
+  demoUploadDescription: "ينشئ وردية ليلية تجريبية وموظفين بأرقام جهاز من 2 إلى 10 وبصمات تجريبية لشهري أغسطس وسبتمبر والشهر الحالي حتى اليوم. لا يتم استبدال الموظفين أو السجلات الموجودة. تبقى البيانات حتى تُحذف يدويًا.",
+  demoMorningShift: "الوردية الصباحية للموظفين التجريبيين",
+  demoMorningShiftRequired: "أنشئ وردية صباحية نشطة تبدأ بعد الفجر في إعدادات الحضور قبل رفع البيانات التجريبية.",
+  demoUploadComplete: "اكتمل رفع البيانات التجريبية",
+  demoUploadFailed: "توقف رفع البيانات التجريبية. يمكنك إعادة المحاولة بأمان",
+  demoEventsCreated: "سجل جديد",
+  demoEventsExisting: "سجل موجود مسبقًا",
+  demoSkippedIds: "أرقام الموظفين الموجودة التي تم تجاوزها",
+  demoData: "تجريبي",
 
   // Attendance
   attendanceTitle: "حضور الموظفين",

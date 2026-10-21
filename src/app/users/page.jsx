@@ -21,6 +21,7 @@ import {
 import { useRestaurants } from "@/hooks/useRestaurants";
 import { useShifts } from "@/hooks/useShifts";
 import { useAttendanceConfig } from "@/hooks/useAttendanceConfig";
+import { uploadAttendanceDemoSeed } from "@/lib/attendance/uploadDemoSeed";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,6 +72,7 @@ import {
   ShieldCheck,
   Search,
   UserRoundCheck,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -97,6 +99,14 @@ export default function UsersPage() {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [employeeDeleteTarget, setEmployeeDeleteTarget] = useState(null);
   const [employeeSaving, setEmployeeSaving] = useState(false);
+  const [demoConfirmOpen, setDemoConfirmOpen] = useState(false);
+  const [demoUploading, setDemoUploading] = useState(false);
+  const [demoMorningShiftId, setDemoMorningShiftId] = useState("");
+  const [demoMessage, setDemoMessage] = useState("");
+  const morningShifts = shiftTemplates.filter((shift) =>
+    shift.active && shift.startType === "prayer" && shift.startPrayer === "Fajr" && shift.endType === "fixed" && !shift.endNextDay
+  );
+  const selectedMorningShiftId = demoMorningShiftId || morningShifts[0]?.id;
 
   // Form state
   const [formData, setFormData] = useState({
@@ -273,6 +283,22 @@ export default function UsersPage() {
       alert(error.message);
     }
     setEmployeeDeleteTarget(null);
+  };
+
+  const handleDemoUpload = async () => {
+    if (!selectedMorningShiftId) return;
+    setDemoConfirmOpen(false);
+    setDemoUploading(true);
+    setDemoMessage("");
+    try {
+      const result = await uploadAttendanceDemoSeed(selectedMorningShiftId, setDemoMessage);
+      setDemoMessage(`${t.demoUploadComplete}: ${result.created} ${t.demoEventsCreated}, ${result.existing} ${t.demoEventsExisting}. ${result.skippedIds.length ? `${t.demoSkippedIds}: ${result.skippedIds.join(", ")}.` : ""}`);
+    } catch (error) {
+      console.error("Demo attendance upload failed:", error);
+      setDemoMessage(`${t.demoUploadFailed}: ${error.message}`);
+    } finally {
+      setDemoUploading(false);
+    }
   };
 
   const filteredUsers = users.filter((u) => {
@@ -457,11 +483,19 @@ export default function UsersPage() {
             <p className="text-sm text-muted-foreground">
               {t.employeeAttendanceHint}
             </p>
-            <Button onClick={openAddEmployeeDialog}>
-              <Plus className="w-4 h-4 me-2" />
-              {t.addEmployee}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => setDemoConfirmOpen(true)} disabled={demoUploading || employeesLoading || !selectedMorningShiftId}>
+                {demoUploading ? <Loader2 className="w-4 h-4 me-2 animate-spin" /> : <Database className="w-4 h-4 me-2" />}
+                {t.uploadDemoAttendance}
+              </Button>
+              <Button onClick={openAddEmployeeDialog}>
+                <Plus className="w-4 h-4 me-2" />
+                {t.addEmployee}
+              </Button>
+            </div>
           </div>
+          {!selectedMorningShiftId && <p className="text-sm text-amber-700">{t.demoMorningShiftRequired}</p>}
+          {demoMessage && <p className="text-sm text-muted-foreground" role="status">{demoMessage}</p>}
 
           <Card>
             <CardContent className="p-0">
@@ -494,7 +528,7 @@ export default function UsersPage() {
                     employees.map((employee) => (
                       <TableRow key={employee.id}>
                         <TableCell className="font-medium">
-                          {employee.displayName}
+                          {employee.displayName}{employee.demoSeedId && <Badge variant="secondary" className="ms-2">{t.demoData}</Badge>}
                         </TableCell>
                         <TableCell dir="ltr" className="text-start">
                           {employee.zkUserId || "--"}
@@ -837,6 +871,30 @@ export default function UsersPage() {
             <AlertDialogAction onClick={handleDelete}>
               {t.delete}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={demoConfirmOpen} onOpenChange={setDemoConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.uploadDemoAttendance}</AlertDialogTitle>
+            <AlertDialogDescription>{t.demoUploadDescription}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label>{t.demoMorningShift}</Label>
+            <Select value={selectedMorningShiftId} onValueChange={setDemoMorningShiftId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {morningShifts.map((shift) => <SelectItem key={shift.id} value={shift.id}>
+                  {locale === "ar" ? shift.nameAr : shift.nameEn}
+                </SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDemoUpload}>{t.uploadDemoAttendance}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

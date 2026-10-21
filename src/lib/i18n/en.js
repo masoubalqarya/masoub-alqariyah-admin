@@ -215,6 +215,16 @@ const en = {
     "Manage employees and map them to the attendance device.",
   noEmployees: "No employees have been added yet.",
   confirmDeleteEmployee: "Are you sure you want to delete this employee?",
+  uploadDemoAttendance: "Upload demo attendance",
+  demoUploadDescription: "Creates a demo night shift, employees with device IDs 2–10, and synthetic punches for August, September, and the current month to date. Existing employees and raw events are never overwritten. This data remains until manually removed.",
+  demoMorningShift: "Morning shift for demo employees",
+  demoMorningShiftRequired: "Create an active Fajr morning shift in Attendance Settings before uploading demo data.",
+  demoUploadComplete: "Demo upload complete",
+  demoUploadFailed: "Demo upload stopped. You can safely retry",
+  demoEventsCreated: "events created",
+  demoEventsExisting: "events already existed",
+  demoSkippedIds: "Existing staff IDs skipped",
+  demoData: "Demo",
 
   // Attendance
   attendanceTitle: "Employee Attendance",
