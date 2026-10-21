@@ -42,6 +42,7 @@ const en = {
   menu: "Menu",
   offers: "Offers",
   restaurants: "Restaurants",
+  attendance: "Attendance",
   analytics: "Analytics",
 
   // Orders
@@ -204,6 +205,36 @@ const en = {
   assignRestaurant: "Assign Restaurant",
   selectRestaurant: "Select Restaurant",
   allRoles: "All Roles",
+  employees: "Employees",
+  employee: "Employee",
+  employeeName: "Employee Name",
+  addEmployee: "Add Employee",
+  editEmployee: "Edit Employee",
+  attendanceDeviceId: "Attendance Device ID",
+  employeeAttendanceHint:
+    "Manage employees and map them to the attendance device.",
+  noEmployees: "No employees have been added yet.",
+  confirmDeleteEmployee: "Are you sure you want to delete this employee?",
+
+  // Attendance
+  attendanceTitle: "Employee Attendance",
+  attendanceSubtitle: "Daily attendance from the SenseFace device",
+  refresh: "Refresh",
+  present: "Present",
+  absent: "Absent",
+  attendanceDevice: "Attendance Device",
+  connected: "Connected",
+  disconnected: "Disconnected",
+  dailyAttendance: "Daily Attendance",
+  firstPunch: "First Punch",
+  lastPunch: "Last Punch",
+  numberOfPunches: "Number of Punches",
+  attendanceLoadError: "Attendance data could not be loaded.",
+  tryAgain: "Try Again",
+  noActiveEmployees: "There are no active employees.",
+  rawStatus: "Raw status",
+  rawVerifyType: "Raw verification type",
+  noPunches: "No punches for this employee on the selected date.",
 
   // POS
   posTitle: "Point of Sale",

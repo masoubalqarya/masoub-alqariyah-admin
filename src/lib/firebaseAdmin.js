@@ -378,6 +378,44 @@ async function firestoreSet(credential, collection, id, data) {
   return result;
 }
 
+async function firestoreCreate(credential, collection, id, data) {
+  const token = await getAccessToken(credential);
+  const params = new URLSearchParams({ documentId: id });
+  const url =
+    `https://firestore.googleapis.com/v1/projects/` +
+    `${encodeURIComponent(credential.projectId)}` +
+    `/databases/(default)/documents/` +
+    `${encodeURIComponent(collection)}?${params.toString()}`;
+  const fields = Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [key, toFirestoreValue(value)]),
+  );
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ fields }),
+  });
+  const result = await res.json().catch(() => ({}));
+
+  if (res.status === 409) {
+    throw adminError(
+      "firestore/already-exists",
+      `Firestore document already exists: ${collection}/${id}`,
+    );
+  }
+
+  if (!res.ok) {
+    throw new Error(
+      result.error?.message || `Firestore create failed (${res.status})`,
+    );
+  }
+
+  return result;
+}
+
 export function getAdminDb() {
   const credential = requireCredential();
 
@@ -387,6 +425,8 @@ export function getAdminDb() {
         get: () => firestoreGet(credential, collection, id),
 
         set: (data) => firestoreSet(credential, collection, id, data),
+
+        create: (data) => firestoreCreate(credential, collection, id, data),
 
         delete: () => firestoreDelete(credential, collection, id),
       }),

@@ -154,8 +154,8 @@ No composite Firestore index is required. The attendance query uses a range on t
 
 Automated validation:
 
-- Run ESLint.
-- Run a production Next.js build.
+- No ESLint.
+- No a production Next.js build.
 - Check editor diagnostics for changed source files.
 
 Manual validation:

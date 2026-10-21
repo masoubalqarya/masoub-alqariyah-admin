@@ -13,6 +13,7 @@ import {
   LogOut,
   Globe,
   Users,
+  CalendarCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/lib/i18n";
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/offers", icon: Tag, labelKey: "offers" },
   { href: "/restaurants", icon: Store, labelKey: "restaurants" },
   { href: "/users", icon: Users, labelKey: "users" },
+  { href: "/attendance", icon: CalendarCheck, labelKey: "attendance" },
   { href: "/analytics", icon: BarChart3, labelKey: "analytics" },
 ];
 

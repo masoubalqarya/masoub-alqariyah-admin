@@ -7,6 +7,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const db = getAdminDb();
+const DEVICE_MODEL = "SenseFace 2A";
+const HEARTBEAT_WRITE_INTERVAL_MS = 5 * 60 * 1000;
 
 function textResponse(body, status = 200) {
   return new NextResponse(body, {
@@ -20,6 +22,111 @@ function textResponse(body, status = 200) {
 
 function createEventId(serial, row) {
   return createHash("sha256").update(`${serial}:${row}`).digest("hex");
+}
+
+function getAllowedSerials() {
+  return new Set(
+    (process.env.ZKTECO_ALLOWED_SERIALS || "")
+      .split(",")
+      .map((serial) => serial.trim())
+      .filter(Boolean),
+  );
+}
+
+function getDeviceSerial(request) {
+  return (
+    request.nextUrl.searchParams.get("SN") ||
+    request.nextUrl.searchParams.get("sn") ||
+    ""
+  ).trim();
+}
+
+function isAllowedSerial(serial) {
+  const allowedSerials = getAllowedSerials();
+
+  if (allowedSerials.size === 0) {
+    console.error("[ZKTeco] ZKTECO_ALLOWED_SERIALS is not configured");
+    return false;
+  }
+
+  return Boolean(serial) && allowedSerials.has(serial);
+}
+
+function parseRiyadhDeviceTime(value) {
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(value);
+
+  if (!match) return null;
+
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText] =
+    match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31 ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59
+  ) {
+    return null;
+  }
+
+  const timestamp = new Date(
+    Date.UTC(year, month - 1, day, hour - 3, minute, second),
+  );
+  const localCheck = new Date(timestamp.getTime() + 3 * 60 * 60 * 1000);
+
+  if (
+    localCheck.getUTCFullYear() !== year ||
+    localCheck.getUTCMonth() !== month - 1 ||
+    localCheck.getUTCDate() !== day ||
+    localCheck.getUTCHours() !== hour ||
+    localCheck.getUTCMinutes() !== minute ||
+    localCheck.getUTCSeconds() !== second
+  ) {
+    return null;
+  }
+
+  return timestamp;
+}
+
+function parseOptionalNumber(value) {
+  if (value === undefined || value === "") return null;
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+async function updateDeviceLastSeen(serial, force = false) {
+  const ref = db.collection("attendanceDevices").doc(serial);
+
+  if (!force) {
+    const existing = await ref.get();
+    const lastSeenAt = existing.data()?.lastSeenAt;
+    const lastSeenMs = lastSeenAt ? Date.parse(lastSeenAt) : Number.NaN;
+
+    if (
+      Number.isFinite(lastSeenMs) &&
+      Date.now() - lastSeenMs < HEARTBEAT_WRITE_INTERVAL_MS
+    ) {
+      return;
+    }
+  }
+
+  await ref.set({
+    serialNumber: serial,
+    provider: "zkteco",
+    model: DEVICE_MODEL,
+    lastSeenAt: new Date(),
+  });
 }
 
 async function getPath(params) {
@@ -36,10 +143,12 @@ export async function GET(request, { params }) {
   try {
     const path = await getPath(params);
 
-    const serial =
-      request.nextUrl.searchParams.get("SN") ||
-      request.nextUrl.searchParams.get("sn") ||
-      "unknown";
+    const serial = getDeviceSerial(request);
+
+    if (!isAllowedSerial(serial)) {
+      console.warn("[ZKTeco] Rejected GET from unknown device serial");
+      return textResponse("FORBIDDEN", 403);
+    }
 
     console.log("[ZKTeco GET]", {
       path,
@@ -52,12 +161,7 @@ export async function GET(request, { params }) {
     // --------------------------------------------------------
 
     if (path === "cdata" || path === "cdata.aspx") {
-      await db.collection("attendanceDevices").doc(serial).set({
-        serialNumber: serial,
-        provider: "zkteco",
-        model: "SenseFace 2A",
-        lastSeenAt: new Date(),
-      });
+      await updateDeviceLastSeen(serial, true);
 
       return textResponse(
         `GET OPTION FROM: ${serial}
@@ -76,6 +180,7 @@ Encrypt=None`,
     // --------------------------------------------------------
 
     if (path === "getrequest" || path === "getrequest.aspx") {
+      await updateDeviceLastSeen(serial);
       return textResponse("OK");
     }
 
@@ -97,10 +202,12 @@ export async function POST(request, { params }) {
   try {
     const path = await getPath(params);
 
-    const serial =
-      request.nextUrl.searchParams.get("SN") ||
-      request.nextUrl.searchParams.get("sn") ||
-      "unknown";
+    const serial = getDeviceSerial(request);
+
+    if (!isAllowedSerial(serial)) {
+      console.warn("[ZKTeco] Rejected POST from unknown device serial");
+      return textResponse("FORBIDDEN", 403);
+    }
 
     const table =
       request.nextUrl.searchParams.get("table")?.toUpperCase() || "";
@@ -119,12 +226,7 @@ export async function POST(request, { params }) {
     // --------------------------------------------------------
 
     if (path === "cdata" || path === "cdata.aspx") {
-      await db.collection("attendanceDevices").doc(serial).set({
-        serialNumber: serial,
-        provider: "zkteco",
-        model: "SenseFace 2A",
-        lastSeenAt: new Date(),
-      });
+      await updateDeviceLastSeen(serial, true);
 
       // ------------------------------------------------------
       // Attendance records
@@ -153,38 +255,31 @@ export async function POST(request, { params }) {
           // This prevents duplicates.
           const eventId = createEventId(serial, row);
 
+          const eventTime = parseRiyadhDeviceTime(eventTimeRaw);
           const ref = db.collection("attendanceEvents").doc(eventId);
 
-          const existing = await ref.get();
+          try {
+            await ref.create({
+              deviceSerial: serial,
+              zkUserId: String(zkUserId),
+              eventTimeRaw,
+              eventTime,
+              status: parseOptionalNumber(status),
+              verifyType: parseOptionalNumber(verifyType),
+              workCode: workCode || null,
+              source: "zkteco",
+              deviceModel: DEVICE_MODEL,
+              raw: row,
+              receivedAt: new Date(),
+            });
+          } catch (error) {
+            if (error.code === "firestore/already-exists") {
+              console.log("[ZKTeco] Duplicate ignored:", eventId);
+              continue;
+            }
 
-          if (existing.exists) {
-            console.log("[ZKTeco] Duplicate ignored:", eventId);
-
-            continue;
+            throw error;
           }
-
-          await ref.set({
-            deviceSerial: serial,
-            zkUserId: String(zkUserId),
-            eventTimeRaw,
-
-            status:
-              status !== undefined && status !== "" ? Number(status) : null,
-
-            verifyType:
-              verifyType !== undefined && verifyType !== ""
-                ? Number(verifyType)
-                : null,
-
-            workCode: workCode || null,
-
-            source: "zkteco",
-            deviceModel: "SenseFace 2A",
-
-            raw: row,
-
-            receivedAt: new Date(),
-          });
 
           saved++;
         }

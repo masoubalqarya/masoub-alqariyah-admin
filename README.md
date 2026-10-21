@@ -23,6 +23,7 @@ Companion apps (same Firebase):
 | **Offers** (`/offers`)           | Manage promotional offers with images                                    |
 | **Restaurants** (`/restaurants`) | Manage restaurant locations, open/closed toggle                          |
 | **Users** (`/users`)             | Create and manage admin/cashier staff accounts                           |
+| **Attendance** (`/attendance`)   | Present/absent dashboard, raw SenseFace punches, and device status       |
 | **Analytics** (`/analytics`)     | Charts & KPIs — orders over time, revenue, payment breakdown             |
 | **POS** (`/pos`)                 | Cashier-only kanban board for restaurant orders + shift clock-in/out     |
 | **Login** (`/login`)             | Email/password authentication                                            |
@@ -41,6 +42,7 @@ Companion apps (same Firebase):
 - **Real-time updates** via Firestore `onSnapshot` listeners
 - **Image uploads** to Firebase Storage (`menuItems/`, `offers/`, `restaurants/`)
 - **Shift tracking** for cashiers (`shifts` collection)
+- **Employee attendance** from a ZKTeco SenseFace 2A with an independent employee roster
 - **Order status audit trail** (`statusHistory` on order updates)
 - **Responsive** design optimized for desktop/tablet
 
@@ -105,6 +107,14 @@ FIREBASE_CLIENT_EMAIL=...
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 ```
 
+The public ZKTeco PUSH route also requires a server-only allowlist. Set this locally and in Vercel without a `NEXT_PUBLIC_` prefix:
+
+```env
+ZKTECO_ALLOWED_SERIALS=NYU7253603435
+```
+
+Use comma-separated serial numbers when adding future terminals.
+
 ### 3. Create the First Admin User
 
 The panel does not support self-registration. Staff need **both** a Firebase Auth account and a Firestore profile:
@@ -152,7 +162,9 @@ src/
 │   ├── menu/page.jsx        # Menu (items, categories, sizes, extras)
 │   ├── offers/page.jsx      # Offers management
 │   ├── restaurants/page.jsx # Restaurant management
-│   ├── users/page.jsx       # Staff user management
+│   ├── users/page.jsx       # Staff accounts + employee roster
+│   ├── attendance/page.jsx  # Employee attendance dashboard
+│   ├── iclock/[...path]/     # Public ZKTeco PUSH endpoint
 │   ├── api/users/[uid]/     # DELETE Auth + Firestore staff user
 │   ├── analytics/page.jsx   # Analytics with charts
 │   └── pos/page.jsx         # Cashier POS / kitchen board
@@ -167,10 +179,12 @@ src/
 │   ├── useOffers.js         # Offers CRUD + image upload
 │   ├── useRestaurants.js    # Restaurants CRUD + image upload
 │   ├── useUsers.js          # Staff users CRUD; delete via Admin API
+│   ├── useEmployees.js      # Independent employee attendance roster
+│   ├── useAttendance.js     # Daily event aggregation + device status
 │   └── useShifts.js         # Clock-in / clock-out
 ├── lib/
 │   ├── firebase.js          # Firebase client initialization
-│   ├── firebaseAdmin.js     # Admin SDK (staff Auth delete)
+│   ├── firebaseAdmin.js     # Server Auth/Firestore REST helpers
 │   ├── utils.js             # cn, formatSAR, order helpers
 │   └── i18n/                # Internationalization
 │       ├── index.jsx        # I18n provider
@@ -196,6 +210,9 @@ src/
 | `orders`        | Orders from mobile, website, or staff (role-scoped read/update; creating customer can read own) |
 | `users`         | Staff profiles keyed by Auth UID                               |
 | `shifts`        | Cashier clock-in / clock-out records                           |
+| `employees`     | Independent attendance roster with optional terminal `zkUserId` |
+| `attendanceEvents` | Immutable raw SenseFace punches; server write, admin read   |
+| `attendanceDevices` | SenseFace model, serial, and rate-limited heartbeat        |
 | `customers`     | Customer profiles (`customers/{uid}`) written by mobile/website on sign-up; owner read/create/update; admin delete |
 
 ### Orders Collection Schema
@@ -223,7 +240,7 @@ src/
 
 Order flow: `pending` → `preparing` → `onTheWay` → `delivered` (or `cancelled`).
 
-### Users & Shifts (staff)
+### Users, Employees & Shifts
 
 ```js
 // users/{uid}
@@ -242,7 +259,18 @@ Order flow: `pending` → `preparing` → `onTheWay` → `delivered` (or `cancel
   clockOut?: Timestamp,
   isActive: boolean,
 }
+
+// employees/{id}
+{
+  displayName: string,
+  zkUserId: string | null,
+  isActive: boolean,
+  createdAt: Timestamp,
+  updatedAt: Timestamp,
+}
 ```
+
+Raw `attendanceEvents` preserve the terminal row, status, verification type, work code, and local `eventTimeRaw`. New events also carry `eventTime`, parsed as Asia/Riyadh (UTC+3). Deterministic hash document IDs and create-only writes make duplicate pushes idempotent without mutating existing events.
 
 ---
 
@@ -276,8 +304,9 @@ Orders are created from the **mobile app** and the **customer website**. Keep `c
 1. Push code to a Git repository (GitHub, GitLab, etc.)
 2. Go to [vercel.com](https://vercel.com) → **New Project** → Import repository
 3. Confirm Firebase config in `src/lib/firebase.js` (or migrate to env vars and set them in Vercel)
-4. Set `FIREBASE_SERVICE_ACCOUNT_BASE64` (base64 of the service-account JSON) so staff delete can remove Auth accounts. Raw `FIREBASE_SERVICE_ACCOUNT` JSON is unreliable on Vercel.
-5. Deploy — Vercel will auto-detect Next.js and build
+4. Set `FIREBASE_SERVICE_ACCOUNT_BASE64` (base64 of the service-account JSON) so staff delete and ZKTeco server writes can access Firebase. Raw `FIREBASE_SERVICE_ACCOUNT` JSON is unreliable on Vercel.
+5. Set `ZKTECO_ALLOWED_SERIALS=NYU7253603435` (comma-separated for future devices).
+6. Deploy — Vercel will auto-detect Next.js and build
 
 ```bash
 # Or deploy via CLI:

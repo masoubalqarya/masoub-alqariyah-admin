@@ -164,6 +164,40 @@
  */
 
 /**
+ * @typedef {Object} Employee
+ * @property {string} id
+ * @property {string} displayName
+ * @property {string | null} zkUserId
+ * @property {boolean} isActive
+ * @property {import('firebase/firestore').Timestamp} createdAt
+ * @property {import('firebase/firestore').Timestamp} updatedAt
+ */
+
+/**
+ * @typedef {Object} AttendanceEvent
+ * @property {string} id
+ * @property {string} deviceSerial
+ * @property {string} zkUserId
+ * @property {string} eventTimeRaw
+ * @property {import('firebase/firestore').Timestamp | null} eventTime
+ * @property {number | null} status
+ * @property {number | null} verifyType
+ * @property {string | null} workCode
+ * @property {'zkteco'} source
+ * @property {'SenseFace 2A'} deviceModel
+ * @property {string} raw
+ * @property {import('firebase/firestore').Timestamp} receivedAt
+ */
+
+/**
+ * @typedef {Object} AttendanceDevice
+ * @property {string} serialNumber
+ * @property {'zkteco'} provider
+ * @property {'SenseFace 2A'} model
+ * @property {import('firebase/firestore').Timestamp} lastSeenAt
+ */
+
+/**
  * @typedef {Object} Shift
  * @property {string} id
  * @property {string} userId

@@ -17,7 +17,7 @@ See those repos’ `AGENTS.md` and `.github/copilot-instructions.md`. Same Fireb
 - Tailwind CSS 4 + Radix/shadcn UI under `src/components/ui/`
 - Brand primary ≈ `#8A776F` (`src/app/globals.css`)
 - Firebase client: `src/lib/firebase.js`
-- Staff Auth+Firestore delete: `DELETE /api/users/[uid]` + `src/lib/firebaseAdmin.js` (needs `FIREBASE_SERVICE_ACCOUNT_BASE64` on Vercel; never commit keys, never `NEXT_PUBLIC_`)
+- Server Firebase REST: staff Auth+Firestore delete and ZKTeco ingestion use `src/lib/firebaseAdmin.js` (needs `FIREBASE_SERVICE_ACCOUNT_BASE64` on Vercel; never commit keys, never `NEXT_PUBLIC_`)
 - Charts: Recharts · Icons: Lucide React
 
 Scripts: `npm run dev` | `build` | `start` | `lint`
@@ -41,7 +41,8 @@ Auth: email/password → load `users/{uid}` → deny if missing, `role === "user
 | `/menu` | Menu CRUD (item image optional; allergies catalog + extras `allergyIds`) |
 | `/offers` | Offers |
 | `/restaurants` | Locations |
-| `/users` | Staff |
+| `/users` | Staff + employee roster |
+| `/attendance` | Daily employee attendance + raw SenseFace punches |
 | `/analytics` | Charts |
 | `/pos` | Cashier board + shifts; order lines show size, cooking, extras |
 | `/login` | Auth (no shell) |
@@ -49,7 +50,7 @@ Auth: email/password → load `users/{uid}` → deny if missing, `role === "user
 ## Architecture
 
 - Client-heavy `"use client"` pages; live data via Firestore `onSnapshot`
-- Domain hooks in `src/hooks/`: `useAuth`, `useOrders`, `useMenu`, `useOffers`, `useRestaurants`, `useUsers`, `useShifts` — prefer extending these over inline Firestore in pages
+- Domain hooks in `src/hooks/`: `useAuth`, `useOrders`, `useMenu`, `useOffers`, `useRestaurants`, `useUsers`, `useEmployees`, `useAttendance`, `useShifts` — prefer extending these over inline Firestore in pages
 - Layout: `providers.jsx` → Auth → I18n → `AppShell`
 - i18n: `src/lib/i18n/` (`en.js` / `ar.js`); logical CSS (`start`/`end`/`ms`/`me`), not raw `left`/`right`
 - UI: `src/components/ui/*` + `cn()` from `src/lib/utils.js`
@@ -71,9 +72,21 @@ Status updates must keep the `statusHistory` / `arrayUnion` pattern in `useOrder
 | `orders` | Staff read/update; creating customer can read own (`userId == auth.uid`); authenticated create (mobile + website); admin delete |
 | `users` | Staff profiles. Helpers use `userExists()` so missing `users/{uid}` does not deny the whole rule. |
 | `shifts` | Cashier clock-in/out |
+| `employees` | Independent employee attendance roster; admin CRUD; optional `zkUserId` |
+| `attendanceEvents` | Immutable raw ZKTeco events; server write, admin read |
+| `attendanceDevices` | ZKTeco device heartbeat/metadata; server write, admin read |
 | `customers` | Owner read/create/update (`customers/{uid}`); admin delete. Written by mobile/website on full-account sign-up. |
 
 Rules: root `firestore.rules`, `storage.rules`. Storage: `menuItems/`, `offers/`, `restaurants/`.
+
+## ZKTeco attendance
+
+- Public PUSH endpoint: `src/app/iclock/[...path]/route.js`; do not add Firebase client authentication.
+- Required server env: `ZKTECO_ALLOWED_SERIALS` (comma-separated, never `NEXT_PUBLIC_`).
+- SenseFace timestamps are local Asia/Riyadh strings and are normalized to UTC timestamps without changing `eventTimeRaw`.
+- `attendanceEvents` use deterministic hash IDs and create-only writes; never update a stored raw event.
+- `getrequest` updates `attendanceDevices.lastSeenAt` only when the heartbeat is at least five minutes stale.
+- The attendance roster is `employees`, not staff login `users` and not legacy POS `shifts`.
 
 ## Conventions
 

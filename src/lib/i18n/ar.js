@@ -42,6 +42,7 @@ const ar = {
   menu: "القائمة",
   offers: "العروض",
   restaurants: "المطاعم",
+  attendance: "الحضور",
   analytics: "التحليلات",
 
   // Orders
@@ -203,6 +204,35 @@ const ar = {
   assignRestaurant: "تعيين المطعم",
   selectRestaurant: "اختر المطعم",
   allRoles: "كل الأدوار",
+  employees: "الموظفون",
+  employee: "الموظف",
+  employeeName: "اسم الموظف",
+  addEmployee: "إضافة موظف",
+  editEmployee: "تعديل موظف",
+  attendanceDeviceId: "رقم الموظف في جهاز الحضور",
+  employeeAttendanceHint: "إدارة الموظفين وربطهم بجهاز الحضور.",
+  noEmployees: "لم تتم إضافة موظفين بعد.",
+  confirmDeleteEmployee: "هل أنت متأكد من حذف هذا الموظف؟",
+
+  // Attendance
+  attendanceTitle: "حضور الموظفين",
+  attendanceSubtitle: "متابعة الحضور اليومي من جهاز SenseFace",
+  refresh: "تحديث",
+  present: "حاضر",
+  absent: "غائب",
+  attendanceDevice: "جهاز الحضور",
+  connected: "متصل",
+  disconnected: "غير متصل",
+  dailyAttendance: "الحضور اليومي",
+  firstPunch: "أول بصمة",
+  lastPunch: "آخر بصمة",
+  numberOfPunches: "عدد البصمات",
+  attendanceLoadError: "تعذر تحميل بيانات الحضور.",
+  tryAgain: "إعادة المحاولة",
+  noActiveEmployees: "لا يوجد موظفون نشطون.",
+  rawStatus: "الحالة الخام",
+  rawVerifyType: "نوع التحقق الخام",
+  noPunches: "لا توجد بصمات لهذا الموظف في التاريخ المحدد.",
 
   // POS
   posTitle: "نقطة البيع",

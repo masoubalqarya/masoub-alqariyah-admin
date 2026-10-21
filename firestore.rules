@@ -52,6 +52,22 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Employee attendance roster - independent of staff login accounts
+    match /employees/{employeeId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Immutable raw events and device heartbeats are written server-side only
+    match /attendanceEvents/{eventId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /attendanceDevices/{deviceId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // Categories - Admin full access, public read for mobile app
     match /categories/{categoryId} {
       allow read: if true;

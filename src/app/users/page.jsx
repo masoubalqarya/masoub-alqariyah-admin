@@ -11,6 +11,13 @@ import {
   toggleUserActive,
   sendUserPasswordReset,
 } from "@/hooks/useUsers";
+import {
+  useEmployees,
+  createEmployee,
+  updateEmployee,
+  deleteEmployee,
+  toggleEmployeeActive,
+} from "@/hooks/useEmployees";
 import { useRestaurants } from "@/hooks/useRestaurants";
 import { useShifts } from "@/hooks/useShifts";
 import { Button } from "@/components/ui/button";
@@ -62,6 +69,7 @@ import {
   Clock,
   ShieldCheck,
   Search,
+  UserRoundCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -72,6 +80,7 @@ export default function UsersPage() {
   const { t, locale } = useI18n();
   const { user: currentUser } = useAuth();
   const { users, loading } = useUsers();
+  const { employees, loading: employeesLoading } = useEmployees();
   const { restaurants } = useRestaurants();
   const { shifts, loading: shiftsLoading } = useShifts();
 
@@ -82,6 +91,10 @@ export default function UsersPage() {
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState("all");
+  const [employeeDialogOpen, setEmployeeDialogOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null);
+  const [employeeDeleteTarget, setEmployeeDeleteTarget] = useState(null);
+  const [employeeSaving, setEmployeeSaving] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -90,6 +103,10 @@ export default function UsersPage() {
     displayName: "",
     role: "cashier",
     restaurantId: "",
+  });
+  const [employeeFormData, setEmployeeFormData] = useState({
+    displayName: "",
+    zkUserId: "",
   });
 
   const resetForm = () => {
@@ -118,6 +135,25 @@ export default function UsersPage() {
       restaurantId: u.restaurantId || "",
     });
     setDialogOpen(true);
+  };
+
+  const resetEmployeeForm = () => {
+    setEmployeeFormData({ displayName: "", zkUserId: "" });
+    setEditingEmployee(null);
+  };
+
+  const openAddEmployeeDialog = () => {
+    resetEmployeeForm();
+    setEmployeeDialogOpen(true);
+  };
+
+  const openEditEmployeeDialog = (employee) => {
+    setEditingEmployee(employee);
+    setEmployeeFormData({
+      displayName: employee.displayName || "",
+      zkUserId: employee.zkUserId || "",
+    });
+    setEmployeeDialogOpen(true);
   };
 
   const handleSave = async () => {
@@ -186,6 +222,38 @@ export default function UsersPage() {
     setResetTarget(null);
   };
 
+  const handleEmployeeSave = async () => {
+    if (!employeeFormData.displayName.trim()) return;
+
+    setEmployeeSaving(true);
+    try {
+      if (editingEmployee) {
+        await updateEmployee(editingEmployee.id, employeeFormData);
+      } else {
+        await createEmployee(employeeFormData);
+      }
+      setEmployeeDialogOpen(false);
+      resetEmployeeForm();
+    } catch (error) {
+      console.error("Error saving employee:", error);
+      alert(error.message);
+    } finally {
+      setEmployeeSaving(false);
+    }
+  };
+
+  const handleEmployeeDelete = async () => {
+    if (!employeeDeleteTarget) return;
+
+    try {
+      await deleteEmployee(employeeDeleteTarget.id);
+    } catch (error) {
+      console.error("Error deleting employee:", error);
+      alert(error.message);
+    }
+    setEmployeeDeleteTarget(null);
+  };
+
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
       !searchQuery ||
@@ -245,6 +313,10 @@ export default function UsersPage() {
           <TabsTrigger value="users">
             <ShieldCheck className="w-4 h-4 me-2" />
             {t.users}
+          </TabsTrigger>
+          <TabsTrigger value="employees">
+            <UserRoundCheck className="w-4 h-4 me-2" />
+            {t.employees}
           </TabsTrigger>
           <TabsTrigger value="shifts">
             <Clock className="w-4 h-4 me-2" />
@@ -344,6 +416,88 @@ export default function UsersPage() {
                               size="icon"
                               onClick={() => setDeleteTarget(u)}
                               disabled={u.uid === currentUser?.uid}
+                              title={t.delete}>
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Employees Tab */}
+        <TabsContent value="employees" className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              {t.employeeAttendanceHint}
+            </p>
+            <Button onClick={openAddEmployeeDialog}>
+              <Plus className="w-4 h-4 me-2" />
+              {t.addEmployee}
+            </Button>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.employee}</TableHead>
+                    <TableHead>{t.attendanceDeviceId}</TableHead>
+                    <TableHead>{t.status}</TableHead>
+                    <TableHead className="text-end">{t.actions}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {employeesLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8">
+                        <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                      </TableCell>
+                    </TableRow>
+                  ) : employees.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center py-8 text-muted-foreground">
+                        {t.noEmployees}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    employees.map((employee) => (
+                      <TableRow key={employee.id}>
+                        <TableCell className="font-medium">
+                          {employee.displayName}
+                        </TableCell>
+                        <TableCell dir="ltr" className="text-start">
+                          {employee.zkUserId || "--"}
+                        </TableCell>
+                        <TableCell>
+                          <Switch
+                            checked={employee.isActive}
+                            onCheckedChange={(checked) =>
+                              toggleEmployeeActive(employee.id, checked)
+                            }
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditEmployeeDialog(employee)}
+                              title={t.edit}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEmployeeDeleteTarget(employee)}
                               title={t.delete}>
                               <Trash2 className="w-4 h-4 text-destructive" />
                             </Button>
@@ -527,6 +681,67 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Add/Edit Employee Dialog */}
+      <Dialog
+        open={employeeDialogOpen}
+        onOpenChange={(open) => {
+          setEmployeeDialogOpen(open);
+          if (!open) resetEmployeeForm();
+        }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingEmployee ? t.editEmployee : t.addEmployee}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{t.employeeName}</Label>
+              <Input
+                value={employeeFormData.displayName}
+                onChange={(event) =>
+                  setEmployeeFormData({
+                    ...employeeFormData,
+                    displayName: event.target.value,
+                  })
+                }
+              />
+            </div>
+            <div>
+              <Label>{t.attendanceDeviceId}</Label>
+              <Input
+                dir="ltr"
+                value={employeeFormData.zkUserId}
+                onChange={(event) =>
+                  setEmployeeFormData({
+                    ...employeeFormData,
+                    zkUserId: event.target.value,
+                  })
+                }
+                placeholder={t.optional}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEmployeeDialogOpen(false)}>
+              {t.cancel}
+            </Button>
+            <Button
+              onClick={handleEmployeeSave}
+              disabled={
+                employeeSaving || !employeeFormData.displayName.trim()
+              }>
+              {employeeSaving && (
+                <Loader2 className="w-4 h-4 me-2 animate-spin" />
+              )}
+              {t.save}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation */}
       <AlertDialog
         open={!!deleteTarget}
@@ -541,6 +756,26 @@ export default function UsersPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>
+              {t.delete}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Employee Confirmation */}
+      <AlertDialog
+        open={!!employeeDeleteTarget}
+        onOpenChange={() => setEmployeeDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.confirm}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t.confirmDeleteEmployee}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleEmployeeDelete}>
               {t.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
