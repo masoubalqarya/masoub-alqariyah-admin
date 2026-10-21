@@ -29,6 +29,8 @@ Currency is always **SAR (ر.س)**. Default UI locale is **Arabic RTL**; English
 
 ## Employee attendance
 
+The approved follow-up design for dual required Fajr/Maghrib shifts, a customizable 28th–27th report period, removal of legacy POS clock-in/out, and updated demo data is in [`docs/superpowers/specs/2026-10-21-dual-shift-attendance-period-design.md`](./docs/superpowers/specs/2026-10-21-dual-shift-attendance-period-design.md). It is a pending design, not yet the implemented behavior described below.
+
 Restaurant employees live independently in `employees` (not authenticated `users` or legacy POS `shifts`) and optionally map to the SenseFace terminal through `zkUserId`. The admin-only `/attendance` dashboard calculates daily shift-aware attendance and on-demand monthly reports from immutable `attendanceEvents`; there is no materialized daily collection. Its rules are implemented in `src/lib/attendance/calculations.js` and tested in `calculations.test.mjs`. The original first phase is documented in [`docs/superpowers/specs/2026-10-21-attendance-module-design.md`](./docs/superpowers/specs/2026-10-21-attendance-module-design.md).
 
 The public ZKTeco PUSH endpoint remains `src/app/iclock/[...path]/route.js`. It requires the server-only comma-separated `ZKTECO_ALLOWED_SERIALS` environment variable, normalizes device timestamps as Asia/Riyadh UTC+3, uses deterministic event IDs with create-only writes, and rate-limits `getrequest` heartbeat writes to once per five minutes. The known device is SenseFace 2A serial `NYU7253603435`; the UI treats a heartbeat within fifteen minutes as connected.
