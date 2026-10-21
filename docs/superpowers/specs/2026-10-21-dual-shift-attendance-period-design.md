@@ -1,7 +1,7 @@
 # Dual-shift attendance and 28th–27th report design
 
 **Date:** 2026-10-21  
-**Status:** Awaiting written-spec review
+**Status:** Approved for implementation planning
 
 ## Purpose and approved decisions
 

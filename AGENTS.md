@@ -29,7 +29,7 @@ Currency is always **SAR (ر.س)**. Default UI locale is **Arabic RTL**; English
 
 ## Employee attendance
 
-The approved follow-up design for dual required Fajr/Maghrib shifts, a customizable 28th–27th report period, removal of legacy POS clock-in/out, and updated demo data is in [`docs/superpowers/specs/2026-10-21-dual-shift-attendance-period-design.md`](./docs/superpowers/specs/2026-10-21-dual-shift-attendance-period-design.md). It is a pending design, not yet the implemented behavior described below.
+The approved follow-up design for dual required Fajr/Maghrib shifts, a customizable 28th–27th report period, removal of legacy POS clock-in/out, and updated demo data is in [`docs/superpowers/specs/2026-10-21-dual-shift-attendance-period-design.md`](./docs/superpowers/specs/2026-10-21-dual-shift-attendance-period-design.md), with an implementation plan in [`docs/superpowers/plans/2026-10-21-dual-shift-attendance-period.md`](./docs/superpowers/plans/2026-10-21-dual-shift-attendance-period.md). This is planned, not yet the implemented behavior described below.
 
 Restaurant employees live independently in `employees` (not authenticated `users` or legacy POS `shifts`) and optionally map to the SenseFace terminal through `zkUserId`. The admin-only `/attendance` dashboard calculates daily shift-aware attendance and on-demand monthly reports from immutable `attendanceEvents`; there is no materialized daily collection. Its rules are implemented in `src/lib/attendance/calculations.js` and tested in `calculations.test.mjs`. The original first phase is documented in [`docs/superpowers/specs/2026-10-21-attendance-module-design.md`](./docs/superpowers/specs/2026-10-21-attendance-module-design.md).
 
