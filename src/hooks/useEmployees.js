@@ -16,9 +16,20 @@ import {
 import { db } from "@/lib/firebase";
 
 function employeePayload(data) {
+  const startOffsetMinutes = Number(data.startOffsetMinutes || 0);
+  const endOffsetMinutes = Number(data.endOffsetMinutes || 0);
+  if (![startOffsetMinutes, endOffsetMinutes].every((value) => Number.isInteger(value) && Math.abs(value) <= 1440)) {
+    throw new Error("Employee offsets must be whole minutes within one day");
+  }
   return {
     displayName: data.displayName.trim(),
     zkUserId: data.zkUserId?.trim() || null,
+    shiftId: data.shiftId || null,
+    startOffsetMinutes,
+    endOffsetMinutes,
+    weeklyOffDays: Array.isArray(data.weeklyOffDays)
+      ? [...new Set(data.weeklyOffDays)].filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
+      : [],
   };
 }
 

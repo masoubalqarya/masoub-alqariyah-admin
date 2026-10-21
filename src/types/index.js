@@ -168,9 +168,61 @@
  * @property {string} id
  * @property {string} displayName
  * @property {string | null} zkUserId
+ * @property {string | null} [shiftId]
+ * @property {number} [startOffsetMinutes] Signed minutes relative to the shift start
+ * @property {number} [endOffsetMinutes] Signed minutes relative to the shift end
+ * @property {number[]} [weeklyOffDays] JavaScript weekday numbers, Sunday = 0
  * @property {boolean} isActive
  * @property {import('firebase/firestore').Timestamp} createdAt
  * @property {import('firebase/firestore').Timestamp} updatedAt
+ */
+
+/**
+ * @typedef {Object} ShiftTemplate
+ * @property {string} id
+ * @property {string} nameEn
+ * @property {string} nameAr
+ * @property {'prayer'} startType
+ * @property {'Fajr' | 'Maghrib'} startPrayer
+ * @property {number} startOffsetMinutes
+ * @property {'fixed'} endType
+ * @property {string} endTime HH:mm in Asia/Riyadh
+ * @property {boolean} endNextDay
+ * @property {number} graceMinutes
+ * @property {boolean} active
+ */
+
+/**
+ * @typedef {Object} AttendanceSettings
+ * @property {number} monthlyLateThresholdMinutes
+ * @property {'all_after_threshold'} deductionPolicy
+ * @property {'Asia/Riyadh'} timezone
+ * @property {{ city: string, country: string }} prayerLocation
+ * @property {number} prayerCalculationMethod
+ */
+
+/**
+ * @typedef {Object} PrayerTime
+ * @property {string} date YYYY-MM-DD
+ * @property {string} fajr HH:mm
+ * @property {string} maghrib HH:mm
+ * @property {'aladhan'} source
+ * @property {boolean} override
+ * @property {string} [overrideReason]
+ * @property {string} [adjustedBy]
+ */
+
+/**
+ * @typedef {Object} AttendanceOverride
+ * @property {string} employeeId
+ * @property {string} shiftDate YYYY-MM-DD in Asia/Riyadh
+ * @property {'manual'} type
+ * @property {string} [adjustedFirstPunch] Riyadh local timestamp
+ * @property {string} [adjustedLastPunch] Riyadh local timestamp
+ * @property {number} [waivedLateMinutes]
+ * @property {string} reason
+ * @property {string} adjustedBy
+ * @property {import('firebase/firestore').Timestamp} adjustedAt
  */
 
 /**

@@ -1,137 +1,139 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
-
-import { useEmployees } from "@/hooks/useEmployees";
-import { db } from "@/lib/firebase";
+import { useCallback, useEffect, useState } from "react";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+import { addDays, dateKeyInRiyadh } from "@/lib/attendance/calculations";
 
 export const ATTENDANCE_DEVICE_SERIAL = "NYU7253603435";
 const CONNECTED_THRESHOLD_MS = 15 * 60 * 1000;
 
-export function getRiyadhDateKey(date = new Date()) {
-  const parts = new Intl.DateTimeFormat("en", {
-    timeZone: "Asia/Riyadh",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+export const getRiyadhDateKey = dateKeyInRiyadh;
 
-  return `${values.year}-${values.month}-${values.day}`;
-}
-
-function nextDateKey(dateKey) {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const next = new Date(Date.UTC(year, month - 1, day + 1));
-
-  return [
-    next.getUTCFullYear(),
-    String(next.getUTCMonth() + 1).padStart(2, "0"),
-    String(next.getUTCDate()).padStart(2, "0"),
-  ].join("-");
-}
-
-function eventTimeLabel(event) {
-  return event.eventTimeRaw?.slice(11, 16) || "--";
-}
-
-export function useAttendance(dateKey) {
-  const { employees, loading: employeesLoading, error: employeesError } =
-    useEmployees();
+export function useAttendanceEvents(startDate, endDate, enabled = true) {
   const [events, setEvents] = useState([]);
-  const [device, setDevice] = useState(null);
-  const [deviceConnected, setDeviceConnected] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loadedKey, setLoadedKey] = useState(null);
   const [error, setError] = useState(null);
-
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const start = `${dateKey} 00:00:00`;
-      const end = `${nextDateKey(dateKey)} 00:00:00`;
-      const eventsQuery = query(
-        collection(db, "attendanceEvents"),
-        where("eventTimeRaw", ">=", start),
-        where("eventTimeRaw", "<", end),
-      );
-      const [eventsSnapshot, deviceSnapshot] = await Promise.all([
-        getDocs(eventsQuery),
-        getDoc(doc(db, "attendanceDevices", ATTENDANCE_DEVICE_SERIAL)),
-      ]);
-
-      setEvents(
-        eventsSnapshot.docs.map((item) => ({ id: item.id, ...item.data() })),
-      );
-      const deviceData = deviceSnapshot.exists()
-        ? { id: deviceSnapshot.id, ...deviceSnapshot.data() }
-        : null;
-      const lastSeenMs = deviceData?.lastSeenAt?.toMillis?.() || 0;
-
-      setDevice(deviceData);
-      setDeviceConnected(
-        lastSeenMs > 0 && Date.now() - lastSeenMs <= CONNECTED_THRESHOLD_MS,
-      );
-    } catch (fetchError) {
-      console.error("Attendance fetch error:", fetchError);
-      setError(fetchError);
-    } finally {
-      setLoading(false);
-    }
-  }, [dateKey]);
+  const [revision, setRevision] = useState(0);
+  const requestKey = `${startDate}|${endDate}|${revision}`;
+  const loading = enabled && loadedKey !== requestKey;
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  const rows = useMemo(() => {
-    const eventsByUser = new Map();
-
-    for (const event of events) {
-      const key = String(event.zkUserId || "");
-      const current = eventsByUser.get(key) || [];
-      current.push(event);
-      eventsByUser.set(key, current);
-    }
-
-    return employees
-      .filter((employee) => employee.isActive)
-      .map((employee) => {
-        const punches = employee.zkUserId
-          ? [...(eventsByUser.get(String(employee.zkUserId)) || [])].sort(
-              (a, b) => a.eventTimeRaw.localeCompare(b.eventTimeRaw),
-            )
-          : [];
-
-        return {
-          ...employee,
-          punches,
-          punchCount: punches.length,
-          firstPunch: punches.length ? eventTimeLabel(punches[0]) : "--",
-          lastPunch:
-            punches.length > 1
-              ? eventTimeLabel(punches[punches.length - 1])
-              : "--",
-          attendanceStatus: punches.length ? "present" : "absent",
-        };
+    if (!enabled) return;
+    let cancelled = false;
+    getDocs(
+      query(
+        collection(db, "attendanceEvents"),
+        where("eventTimeRaw", ">=", `${addDays(startDate, -1)} 00:00:00`),
+        where("eventTimeRaw", "<", `${addDays(endDate, 1)} 00:00:00`),
+      ),
+    )
+      .then((snapshot) => {
+        if (!cancelled) {
+          setEvents(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
+          setError(null);
+        }
+      })
+      .catch((fetchError) => {
+        if (!cancelled) setError(fetchError);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedKey(requestKey);
       });
-  }, [employees, events]);
+    return () => {
+      cancelled = true;
+    };
+  }, [startDate, endDate, enabled, revision, requestKey]);
 
-  return {
-    rows,
-    device,
-    deviceConnected,
-    loading: loading || employeesLoading,
-    error: error || employeesError,
-    refresh,
-  };
+  return { events, loading, error, refresh: () => setRevision((value) => value + 1) };
+}
+
+export function useAttendanceDevice() {
+  const [device, setDevice] = useState(null);
+  const [connected, setConnected] = useState(false);
+
+  const refresh = useCallback(async () => {
+    try {
+      const snapshot = await getDoc(doc(db, "attendanceDevices", ATTENDANCE_DEVICE_SERIAL));
+      const data = snapshot.exists() ? snapshot.data() : null;
+      const lastSeen = data?.lastSeenAt?.toMillis?.() || 0;
+      setDevice(data);
+      setConnected(lastSeen > 0 && Date.now() - lastSeen <= CONNECTED_THRESHOLD_MS);
+    } catch (error) {
+      console.error("Attendance device load failed:", error);
+      setConnected(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getDoc(doc(db, "attendanceDevices", ATTENDANCE_DEVICE_SERIAL))
+      .then((snapshot) => {
+        if (cancelled) return;
+        const data = snapshot.exists() ? snapshot.data() : null;
+        const lastSeen = data?.lastSeenAt?.toMillis?.() || 0;
+        setDevice(data);
+        setConnected(lastSeen > 0 && Date.now() - lastSeen <= CONNECTED_THRESHOLD_MS);
+      })
+      .catch((error) => console.error("Attendance device load failed:", error));
+    return () => { cancelled = true; };
+  }, []);
+
+  return { device, connected, refresh };
+}
+
+export function usePrayerMonth(year, month, enabled = true, configurationKey = "") {
+  const [days, setDays] = useState({});
+  const [loadedKey, setLoadedKey] = useState(null);
+  const [error, setError] = useState(null);
+  const [revision, setRevision] = useState(0);
+  const requestKey = `${year}|${month}|${configurationKey}|${revision}`;
+  const loading = enabled && loadedKey !== requestKey;
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    async function load() {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("Not authenticated");
+      const response = await fetch(`/api/attendance/prayer-times?year=${year}&month=${month}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error(`Prayer times request failed (${response.status})`);
+      const body = await response.json();
+      return Object.fromEntries(body.days.map((day) => [day.date, day]));
+    }
+    load()
+      .then((data) => {
+        if (!cancelled) {
+          setDays(data);
+          setError(null);
+        }
+      })
+      .catch((fetchError) => {
+        if (!cancelled) setError(fetchError);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadedKey(requestKey);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [year, month, enabled, configurationKey, revision, requestKey]);
+
+  return { days, loading, error, refresh: () => setRevision((value) => value + 1) };
+}
+
+export async function savePrayerOverride({ date, fajr, maghrib, reason }) {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error("Not authenticated");
+  const response = await fetch("/api/attendance/prayer-times", {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ date, fajr, maghrib, reason }),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error || "Unable to save prayer override");
+  }
 }

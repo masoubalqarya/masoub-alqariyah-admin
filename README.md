@@ -23,7 +23,7 @@ Companion apps (same Firebase):
 | **Offers** (`/offers`)           | Manage promotional offers with images                                    |
 | **Restaurants** (`/restaurants`) | Manage restaurant locations, open/closed toggle                          |
 | **Users** (`/users`)             | Create and manage admin/cashier staff accounts                           |
-| **Attendance** (`/attendance`)   | Present/absent dashboard, raw SenseFace punches, and device status       |
+| **Attendance** (`/attendance`)   | Prayer-based daily shifts, raw punches, manual corrections, monthly report, settings, and device status |
 | **Analytics** (`/analytics`)     | Charts & KPIs — orders over time, revenue, payment breakdown             |
 | **POS** (`/pos`)                 | Cashier-only kanban board for restaurant orders + shift clock-in/out     |
 | **Login** (`/login`)             | Email/password authentication                                            |
@@ -210,9 +210,13 @@ src/
 | `orders`        | Orders from mobile, website, or staff (role-scoped read/update; creating customer can read own) |
 | `users`         | Staff profiles keyed by Auth UID                               |
 | `shifts`        | Cashier clock-in / clock-out records                           |
-| `employees`     | Independent attendance roster with optional terminal `zkUserId` |
+| `employees`     | Independent attendance roster with optional terminal `zkUserId`, assigned shift, minute offsets, and weekly days off |
 | `attendanceEvents` | Immutable raw SenseFace punches; server write, admin read   |
 | `attendanceDevices` | SenseFace model, serial, and rate-limited heartbeat        |
+| `shiftTemplates` | Admin-managed Fajr/Maghrib attendance shifts, separate from POS `shifts` |
+| `attendanceSettings/default` | Monthly lateness threshold and prayer location/method |
+| `prayerTimes/{YYYY-MM-DD}` | Server-cached AlAdhan Fajr/Maghrib times and reasoned manual overrides |
+| `attendanceOverrides/{employeeId}_{shiftDate}` | Admin corrections with reason; raw events remain immutable |
 | `customers`     | Customer profiles (`customers/{uid}`) written by mobile/website on sign-up; owner read/create/update; admin delete |
 
 ### Orders Collection Schema
@@ -271,6 +275,16 @@ Order flow: `pending` → `preparing` → `onTheWay` → `delivered` (or `cancel
 ```
 
 Raw `attendanceEvents` preserve the terminal row, status, verification type, work code, and local `eventTimeRaw`. New events also carry `eventTime`, parsed as Asia/Riyadh (UTC+3). Deterministic hash document IDs and create-only writes make duplicate pushes idempotent without mutating existing events.
+
+### Prayer-based attendance and monthly reports
+
+In Attendance Settings, create morning/evening shift templates with Fajr or Maghrib start, configurable prayer offset, fixed end, next-day flag, grace, and active state. Then assign each employee a shift in Users → Employees. Employee arrival/departure minute offsets are signed; select weekly days off (an empty selection means every calendar day works). No shift templates or assignments are seeded automatically. An employee without an assigned shift retains a raw calendar-day punch view but is not counted in calculated monthly working days. Inactive templates cannot be newly assigned but still calculate for employees already assigned to them.
+
+The daily view uses Asia/Riyadh `shiftDate`, not just punch calendar dates. A night shift ending at 02:00 owns its after-midnight punches. One raw punch shows no last punch. A 90-minute buffer around the expected start/end collects punches for the shift. Admins can enter a reasoned first/last punch correction or waive late minutes; raw events never change. Only completed working shifts after employee creation enter the monthly report, so an in-progress shift is not prematurely counted absent.
+
+The admin-authenticated prayer-time route fetches AlAdhan's monthly city calendar (default Jeddah, Saudi Arabia, Umm Al-Qura method 4) only when needed. It caches each day in `prayerTimes` and keeps manual date overrides even when the provider configuration changes. This uses the existing server credential; no new environment variable or Firestore composite index is needed. Deploy updated `firestore.rules` before opening the new admin UI.
+
+Monthly Option B uses the configured threshold (default 60 minutes): `deductionApplies = totalLateMinutes >= monthlyLateThresholdMinutes`; `deductibleMinutes = deductionApplies ? totalLateMinutes : 0`. All minutes become deductible once the threshold is met. No SAR salary calculation is performed.
 
 ---
 

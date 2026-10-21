@@ -42,7 +42,7 @@ Auth: email/password → load `users/{uid}` → deny if missing, `role === "user
 | `/offers` | Offers |
 | `/restaurants` | Locations |
 | `/users` | Staff + employee roster |
-| `/attendance` | Daily employee attendance + raw SenseFace punches |
+| `/attendance` | Daily prayer/shift attendance, raw punches and corrections, monthly report, shift/policy settings |
 | `/analytics` | Charts |
 | `/pos` | Cashier board + shifts; order lines show size, cooking, extras |
 | `/login` | Auth (no shell) |
@@ -50,7 +50,7 @@ Auth: email/password → load `users/{uid}` → deny if missing, `role === "user
 ## Architecture
 
 - Client-heavy `"use client"` pages; live data via Firestore `onSnapshot`
-- Domain hooks in `src/hooks/`: `useAuth`, `useOrders`, `useMenu`, `useOffers`, `useRestaurants`, `useUsers`, `useEmployees`, `useAttendance`, `useShifts` — prefer extending these over inline Firestore in pages
+- Domain hooks in `src/hooks/`: `useAuth`, `useOrders`, `useMenu`, `useOffers`, `useRestaurants`, `useUsers`, `useEmployees`, `useAttendance` (events/device/prayer), `useAttendanceConfig`, `useAttendanceOverrides`, `useShifts` (POS) — prefer extending these over inline Firestore in pages
 - Layout: `providers.jsx` → Auth → I18n → `AppShell`
 - i18n: `src/lib/i18n/` (`en.js` / `ar.js`); logical CSS (`start`/`end`/`ms`/`me`), not raw `left`/`right`
 - UI: `src/components/ui/*` + `cn()` from `src/lib/utils.js`
@@ -72,9 +72,13 @@ Status updates must keep the `statusHistory` / `arrayUnion` pattern in `useOrder
 | `orders` | Staff read/update; creating customer can read own (`userId == auth.uid`); authenticated create (mobile + website); admin delete |
 | `users` | Staff profiles. Helpers use `userExists()` so missing `users/{uid}` does not deny the whole rule. |
 | `shifts` | Cashier clock-in/out |
-| `employees` | Independent employee attendance roster; admin CRUD; optional `zkUserId` |
+| `employees` | Independent employee attendance roster; admin CRUD; optional `zkUserId`, shift assignment, minute offsets, weekly days off |
 | `attendanceEvents` | Immutable raw ZKTeco events; server write, admin read |
 | `attendanceDevices` | ZKTeco device heartbeat/metadata; server write, admin read |
+| `shiftTemplates` | Admin-only Fajr/Maghrib attendance templates, separate from POS `shifts` |
+| `attendanceSettings/default` | Admin-only monthly threshold and prayer configuration |
+| `prayerTimes/{YYYY-MM-DD}` | Admin-read/server-written monthly AlAdhan cache and manual adjustments |
+| `attendanceOverrides/{employeeId}_{shiftDate}` | Admin-written corrections requiring reason; never alter raw events |
 | `customers` | Owner read/create/update (`customers/{uid}`); admin delete. Written by mobile/website on full-account sign-up. |
 
 Rules: root `firestore.rules`, `storage.rules`. Storage: `menuItems/`, `offers/`, `restaurants/`.
@@ -87,6 +91,8 @@ Rules: root `firestore.rules`, `storage.rules`. Storage: `menuItems/`, `offers/`
 - `attendanceEvents` use deterministic hash IDs and create-only writes; never update a stored raw event.
 - `getrequest` updates `attendanceDevices.lastSeenAt` only when the heartbeat is at least five minutes stale.
 - The attendance roster is `employees`, not staff login `users` and not legacy POS `shifts`.
+- Attendance shift windows, Riyadh time, and Option B monthly deduction minutes are calculated on demand by `src/lib/attendance/calculations.js`; monthly reports count completed working shifts only. Inactive templates still calculate for already-assigned employees but cannot be newly assigned. Weekly off-days are per employee; an empty array means every day is a working day. No monetary deduction is computed.
+- `/api/attendance/prayer-times` verifies admin identity with the existing server helper, fetches AlAdhan monthly calendars (default Jeddah/method 4), caches date docs, and preserves manual overrides. Do not expose service credentials or require client auth on `/iclock`.
 
 ## Conventions
 

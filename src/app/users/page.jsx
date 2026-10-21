@@ -20,6 +20,7 @@ import {
 } from "@/hooks/useEmployees";
 import { useRestaurants } from "@/hooks/useRestaurants";
 import { useShifts } from "@/hooks/useShifts";
+import { useAttendanceConfig } from "@/hooks/useAttendanceConfig";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,6 +84,7 @@ export default function UsersPage() {
   const { employees, loading: employeesLoading } = useEmployees();
   const { restaurants } = useRestaurants();
   const { shifts, loading: shiftsLoading } = useShifts();
+  const { shifts: shiftTemplates } = useAttendanceConfig();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -107,6 +109,10 @@ export default function UsersPage() {
   const [employeeFormData, setEmployeeFormData] = useState({
     displayName: "",
     zkUserId: "",
+    shiftId: "",
+    startOffsetMinutes: 0,
+    endOffsetMinutes: 0,
+    weeklyOffDays: [],
   });
 
   const resetForm = () => {
@@ -138,7 +144,10 @@ export default function UsersPage() {
   };
 
   const resetEmployeeForm = () => {
-    setEmployeeFormData({ displayName: "", zkUserId: "" });
+    setEmployeeFormData({
+      displayName: "", zkUserId: "", shiftId: "",
+      startOffsetMinutes: 0, endOffsetMinutes: 0, weeklyOffDays: [],
+    });
     setEditingEmployee(null);
   };
 
@@ -152,6 +161,10 @@ export default function UsersPage() {
     setEmployeeFormData({
       displayName: employee.displayName || "",
       zkUserId: employee.zkUserId || "",
+      shiftId: employee.shiftId || "",
+      startOffsetMinutes: employee.startOffsetMinutes || 0,
+      endOffsetMinutes: employee.endOffsetMinutes || 0,
+      weeklyOffDays: employee.weeklyOffDays || [],
     });
     setEmployeeDialogOpen(true);
   };
@@ -224,6 +237,14 @@ export default function UsersPage() {
 
   const handleEmployeeSave = async () => {
     if (!employeeFormData.displayName.trim()) return;
+
+    const mappedId = employeeFormData.zkUserId.trim();
+    if (mappedId && employees.some((item) =>
+      item.id !== editingEmployee?.id && item.zkUserId === mappedId
+    )) {
+      alert(t.duplicateAttendanceDeviceId);
+      return;
+    }
 
     setEmployeeSaving(true);
     try {
@@ -449,6 +470,7 @@ export default function UsersPage() {
                   <TableRow>
                     <TableHead>{t.employee}</TableHead>
                     <TableHead>{t.attendanceDeviceId}</TableHead>
+                    <TableHead>{t.assignedShift}</TableHead>
                     <TableHead>{t.status}</TableHead>
                     <TableHead className="text-end">{t.actions}</TableHead>
                   </TableRow>
@@ -456,14 +478,14 @@ export default function UsersPage() {
                 <TableBody>
                   {employeesLoading ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8">
+                      <TableCell colSpan={5} className="text-center py-8">
                         <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                       </TableCell>
                     </TableRow>
                   ) : employees.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={4}
+                        colSpan={5}
                         className="text-center py-8 text-muted-foreground">
                         {t.noEmployees}
                       </TableCell>
@@ -476,6 +498,11 @@ export default function UsersPage() {
                         </TableCell>
                         <TableCell dir="ltr" className="text-start">
                           {employee.zkUserId || "--"}
+                        </TableCell>
+                        <TableCell>
+                          {shiftTemplates.find((shift) => shift.id === employee.shiftId)?.[
+                            locale === "ar" ? "nameAr" : "nameEn"
+                          ] || "--"}
                         </TableCell>
                         <TableCell>
                           <Switch
@@ -688,7 +715,7 @@ export default function UsersPage() {
           setEmployeeDialogOpen(open);
           if (!open) resetEmployeeForm();
         }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingEmployee ? t.editEmployee : t.addEmployee}
@@ -720,6 +747,58 @@ export default function UsersPage() {
                 }
                 placeholder={t.optional}
               />
+            </div>
+            <div>
+              <Label>{t.assignedShift}</Label>
+              <Select
+                value={employeeFormData.shiftId || "none"}
+                onValueChange={(value) =>
+                  setEmployeeFormData({ ...employeeFormData, shiftId: value === "none" ? "" : value })
+                }>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">{t.noShiftAssigned}</SelectItem>
+                  {shiftTemplates.filter((shift) => shift.active || shift.id === employeeFormData.shiftId).map((shift) => (
+                    <SelectItem key={shift.id} value={shift.id}>
+                      {locale === "ar" ? shift.nameAr : shift.nameEn}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>{t.employeeStartOffset}</Label>
+                <Input type="number" value={employeeFormData.startOffsetMinutes}
+                  onChange={(event) => setEmployeeFormData({
+                    ...employeeFormData, startOffsetMinutes: event.target.value,
+                  })} />
+              </div>
+              <div>
+                <Label>{t.employeeEndOffset}</Label>
+                <Input type="number" value={employeeFormData.endOffsetMinutes}
+                  onChange={(event) => setEmployeeFormData({
+                    ...employeeFormData, endOffsetMinutes: event.target.value,
+                  })} />
+              </div>
+            </div>
+            <div>
+              <Label>{t.weeklyOffDays}</Label>
+              <p className="text-xs text-muted-foreground">{t.weeklyOffDaysHint}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {t.weekdayNames.map((name, index) => (
+                  <Button key={index} type="button" size="sm"
+                    variant={employeeFormData.weeklyOffDays.includes(index) ? "default" : "outline"}
+                    onClick={() => setEmployeeFormData({
+                      ...employeeFormData,
+                      weeklyOffDays: employeeFormData.weeklyOffDays.includes(index)
+                        ? employeeFormData.weeklyOffDays.filter((day) => day !== index)
+                        : [...employeeFormData.weeklyOffDays, index],
+                    })}>
+                    {name}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>

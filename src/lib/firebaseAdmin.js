@@ -250,7 +250,7 @@ async function firestoreGet(credential, collection, id) {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status === 404) {
-    return { exists: false, data: () => null };
+    return { exists: false, data: () => null, updateTime: null };
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -258,7 +258,11 @@ async function firestoreGet(credential, collection, id) {
       data.error?.message || `Firestore get failed (${res.status})`,
     );
   }
-  return { exists: true, data: () => unwrapFirestoreFields(data.fields) };
+  return {
+    exists: true,
+    data: () => unwrapFirestoreFields(data.fields),
+    updateTime: data.updateTime,
+  };
 }
 
 async function firestoreDelete(credential, collection, id) {
@@ -336,7 +340,7 @@ function toFirestoreValue(value) {
   throw new Error(`Unsupported Firestore value: ${typeof value}`);
 }
 
-async function firestoreSet(credential, collection, id, data) {
+async function firestoreSet(credential, collection, id, data, options = {}) {
   const token = await getAccessToken(credential);
 
   const params = new URLSearchParams();
@@ -345,6 +349,9 @@ async function firestoreSet(credential, collection, id, data) {
   // This prevents us from deleting fields such as branchId later.
   for (const field of Object.keys(data)) {
     params.append("updateMask.fieldPaths", field);
+  }
+  if (options.updateTime) {
+    params.set("currentDocument.updateTime", options.updateTime);
   }
 
   const url =
@@ -370,6 +377,10 @@ async function firestoreSet(credential, collection, id, data) {
   const result = await res.json().catch(() => ({}));
 
   if (!res.ok) {
+    if (options.updateTime && (res.status === 400 || res.status === 409 || res.status === 412) &&
+      result.error?.status === "FAILED_PRECONDITION") {
+      throw adminError("firestore/precondition-failed", "Document changed concurrently");
+    }
     throw new Error(
       result.error?.message || `Firestore set failed (${res.status})`,
     );
@@ -407,6 +418,10 @@ async function firestoreCreate(credential, collection, id, data) {
     );
   }
 
+  if (res.status === 412) {
+    throw adminError("firestore/precondition-failed", "Document changed concurrently");
+  }
+
   if (!res.ok) {
     throw new Error(
       result.error?.message || `Firestore create failed (${res.status})`,
@@ -424,7 +439,7 @@ export function getAdminDb() {
       doc: (id) => ({
         get: () => firestoreGet(credential, collection, id),
 
-        set: (data) => firestoreSet(credential, collection, id, data),
+        set: (data, options) => firestoreSet(credential, collection, id, data, options),
 
         create: (data) => firestoreCreate(credential, collection, id, data),
 

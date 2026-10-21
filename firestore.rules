@@ -68,6 +68,32 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Attendance configuration and manager corrections are admin-only.
+    match /shiftTemplates/{shiftId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /attendanceSettings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+
+    // The prayer provider and manual adjustment endpoint write with server credentials.
+    match /prayerTimes/{date} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /attendanceOverrides/{overrideId} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin() &&
+        request.resource.data.employeeId is string &&
+        request.resource.data.shiftDate is string &&
+        request.resource.data.reason is string &&
+        request.resource.data.reason.size() > 0 &&
+        request.resource.data.adjustedBy == request.auth.uid;
+      allow delete: if false;
+    }
+
     // Categories - Admin full access, public read for mobile app
     match /categories/{categoryId} {
       allow read: if true;
