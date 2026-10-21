@@ -37,8 +37,15 @@ function AttendanceTable({ heads, rows, loading, error, empty, onSelect }) {
       <Table><TableHeader><TableRow>{heads.map((head) => <TableHead key={head}>{head}</TableHead>)}</TableRow></TableHeader>
         <TableBody>{loading ? <TableRow><TableCell colSpan={heads.length} className="py-10 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></TableCell></TableRow> :
           rows.length === 0 ? <TableRow><TableCell colSpan={heads.length} className="py-10 text-center">{empty}</TableCell></TableRow> :
-            rows.map((row) => <TableRow key={row.key || row.employee.id} className="cursor-pointer" tabIndex={0}
+            rows.map((row, index) => <TableRow key={row.key || row.employee.id}
+              className={`cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring ${row.groupStart && index > 0 ? "border-t-2 border-border" : ""}`}
+              tabIndex={0} aria-label={row.rowLabel}
               onClick={() => onSelect(row)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(row); } }}>
+              {row.groupStart && <th scope="row" rowSpan={row.groupSize}
+                className="min-w-40 cursor-default border-e bg-muted/30 px-3 py-2 text-start align-middle font-medium"
+                onClick={(event) => event.stopPropagation()}>
+                {row.nameCell}
+              </th>}
               {row.cells.map((cell, index) => <TableCell key={index}>{cell}</TableCell>)}
             </TableRow>)}
         </TableBody></Table>}
@@ -159,16 +166,25 @@ export default function AttendancePage() {
     finally { setSaving(false); }
   }
 
-  const dailyTableRows = dailyRows.map(({ key, employee, shift, day }) => ({ key, employee, day, cells: [
-    <span key="name" className="font-medium">{employee.displayName}{employee.demoSeedId && <Badge variant="secondary" className="ms-2">{t.demoData}</Badge>}{day?.override && <Badge variant="secondary" className="ms-2">{t.adjusted}</Badge>}</span>,
-    shiftName(day?.shift || shift), <span key="expected" dir="ltr">{timeLabel(day?.expectedStart)}</span>,
-    <span key="first" dir="ltr">{timeLabel(day?.firstPunch)}</span>,
-    <span key="last" dir="ltr">{timeLabel(day?.lastPunch)}</span>,
-    day?.punchCount ?? 0,
-    day?.firstPunch && day.shift ? `${day.lateMinutes} ${t.minutes}` : "--",
-    !isWorkingDay(employee, dateKey) && !day?.firstPunch
-      ? <Badge key="off" variant="secondary">{t.dayOff}</Badge> : statusBadge(day, t),
-  ] }));
+  const dailyTableRows = dailyRows.map(({ key, employee, shift, day }, index) => ({
+    key, employee, day,
+    groupStart: index === 0 || dailyRows[index - 1].employee.id !== employee.id,
+    groupSize: dailyRows.filter((row) => row.employee.id === employee.id).length,
+    nameCell: <span>{employee.displayName}{employee.demoSeedId && <Badge variant="secondary" className="ms-2">{t.demoData}</Badge>}</span>,
+    rowLabel: `${employee.displayName}: ${shiftName(day?.shift || shift)}`,
+    cells: [
+      <span key="shift" className="inline-flex min-w-28 items-center gap-2 whitespace-nowrap">
+        {shiftName(day?.shift || shift)}{day?.override && <Badge variant="secondary">{t.adjusted}</Badge>}
+      </span>,
+      <span key="expected" dir="ltr">{timeLabel(day?.expectedStart)}</span>,
+      <span key="first" dir="ltr">{timeLabel(day?.firstPunch)}</span>,
+      <span key="last" dir="ltr">{timeLabel(day?.lastPunch)}</span>,
+      day?.punchCount ?? 0,
+      day?.firstPunch && day.shift ? `${day.lateMinutes} ${t.minutes}` : "--",
+      !isWorkingDay(employee, dateKey) && !day?.firstPunch
+        ? <Badge key="off" variant="secondary">{t.dayOff}</Badge> : statusBadge(day, t),
+    ],
+  }));
   const monthlyTableRows = monthlyRows.map(({ employee, summary }) => ({ employee, cells: [
     <span key="name">{employee.displayName}{employee.demoSeedId && <Badge variant="secondary" className="ms-2">{t.demoData}</Badge>}</span>, getAssignedShiftIds(employee).map((id) => shiftName(shiftById.get(id))).join(" · ") || "--", summary.workingDays,
     summary.scheduledShifts, summary.presentShifts, summary.absentShifts, summary.lateShifts, summary.totalLateMinutes,
