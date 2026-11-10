@@ -1,0 +1,619 @@
+{
+  "menuItems": [
+    {
+      "id": "masoub",
+      "nameEn": "Masoub",
+      "nameAr": "معصوب",
+      "price": 5,
+      "calories": 400,
+      "category": "masoub",
+      "cookingOptions": [
+        {
+          "id": "local",
+          "nameEn": "Local",
+          "nameAr": "محلي",
+          "priceAdd": 0,
+          "isDefault": true
+        },
+        {
+          "id": "outside",
+          "nameEn": "Outside",
+          "nameAr": "خارجي",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "nigella",
+          "nameEn": "Nigella",
+          "nameAr": "حبة البركة",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "fatir_plain",
+          "nameEn": "Plain fatir",
+          "nameAr": "فطيرة عادي",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "fatir_millet",
+          "nameEn": "Millet fatir",
+          "nameAr": "فطيرة دخن",
+          "priceAdd": 0,
+          "isDefault": false
+        }
+      ],
+      "availableSizes": [
+        "cup",
+        "small",
+        "large"
+      ],
+      "sizePriceAdd": {
+        "cup": 0,
+        "small": 2,
+        "large": 5
+      },
+      "sizeCalories": {
+        "cup": 400,
+        "small": 850,
+        "large": 1050
+      },
+      "ingredients": [
+        {
+          "nameEn": "Crumbled plain or millet fatir",
+          "nameAr": "مفروم فطيرة عادي أو دخن"
+        },
+        {
+          "nameEn": "Banana",
+          "nameAr": "موز"
+        },
+        {
+          "nameEn": "Ghee",
+          "nameAr": "سمن"
+        }
+      ],
+      "allergies": [
+        "gluten",
+        "dairy",
+        "eggs"
+      ],
+      "availableExtras": [
+        "extra_honey",
+        "extra_cream",
+        "extra_nutella",
+        "extra_cashew",
+        "extra_pistachio",
+        "extra_cornflakes",
+        "extra_cheddar",
+        "extra_milk",
+        "extra_date_paste",
+        "extra_banana"
+      ]
+    },
+    {
+      "id": "areekah",
+      "nameEn": "Areekah",
+      "nameAr": "عريكة",
+      "price": 5,
+      "calories": 520,
+      "category": "areekah",
+      "cookingOptions": [
+        {
+          "id": "local",
+          "nameEn": "Local",
+          "nameAr": "محلي",
+          "priceAdd": 0,
+          "isDefault": true
+        },
+        {
+          "id": "outside",
+          "nameEn": "Outside",
+          "nameAr": "خارجي",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "nigella",
+          "nameEn": "Nigella",
+          "nameAr": "حبة البركة",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "fatir_plain",
+          "nameEn": "Plain fatir",
+          "nameAr": "فطيرة عادي",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "fatir_barley",
+          "nameEn": "Barley fatir",
+          "nameAr": "فطيرة بر",
+          "priceAdd": 0,
+          "isDefault": false
+        }
+      ],
+      "availableSizes": [
+        "cup",
+        "small",
+        "large"
+      ],
+      "sizePriceAdd": {
+        "cup": 0,
+        "small": 2,
+        "large": 5
+      },
+      "sizeCalories": {
+        "cup": 520,
+        "small": 970,
+        "large": 1170
+      },
+      "ingredients": [
+        {
+          "nameEn": "Crumbled plain or barley fatir",
+          "nameAr": "مفروم فطيرة عادي أو بر"
+        },
+        {
+          "nameEn": "Date paste",
+          "nameAr": "عجينة التمر"
+        },
+        {
+          "nameEn": "Ghee",
+          "nameAr": "سمن"
+        }
+      ],
+      "allergies": [
+        "gluten",
+        "dairy",
+        "eggs"
+      ],
+      "availableExtras": [
+        "extra_honey",
+        "extra_cream",
+        "extra_nutella",
+        "extra_cashew",
+        "extra_pistachio",
+        "extra_cornflakes",
+        "extra_cheddar",
+        "extra_milk",
+        "extra_date_paste",
+        "extra_banana"
+      ]
+    },
+    {
+      "id": "foul",
+      "nameEn": "Foul",
+      "nameAr": "فول",
+      "price": 3,
+      "calories": 300,
+      "category": "foul_lentils",
+      "cookingOptions": [
+        {
+          "id": "qallaba",
+          "nameEn": "Qallaba",
+          "nameAr": "قلابة",
+          "priceAdd": 0,
+          "isDefault": true
+        },
+        {
+          "id": "jarra",
+          "nameEn": "Jarra",
+          "nameAr": "جرة",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "local",
+          "nameEn": "Local",
+          "nameAr": "محلي",
+          "priceAdd": 2,
+          "isDefault": false
+        }
+      ],
+      "availableSizes": [
+        "small",
+        "large"
+      ],
+      "sizePriceAdd": {
+        "small": 0,
+        "large": 2
+      },
+      "sizeCalories": {
+        "small": 300,
+        "large": 500
+      },
+      "ingredients": [
+        {
+          "nameEn": "Fava beans",
+          "nameAr": "فول"
+        },
+        {
+          "nameEn": "Tomato",
+          "nameAr": "طماطم"
+        },
+        {
+          "nameEn": "Kishna",
+          "nameAr": "كشنة"
+        },
+        {
+          "nameEn": "House spice mix",
+          "nameAr": "خلطة بهارات خاصة"
+        }
+      ],
+      "allergies": [],
+      "availableExtras": [
+        "extra_olive_oil",
+        "extra_ghee",
+        "extra_white_cheese"
+      ]
+    },
+    {
+      "id": "tamees",
+      "nameEn": "Tamees",
+      "nameAr": "تميس",
+      "price": 1,
+      "calories": 700,
+      "category": "tamees",
+      "cookingOptions": [
+        {
+          "id": "local",
+          "nameEn": "Local",
+          "nameAr": "محلي",
+          "priceAdd": 0,
+          "isDefault": true
+        },
+        {
+          "id": "outside",
+          "nameEn": "Outside",
+          "nameAr": "خارجي",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "taifi",
+          "nameEn": "Taifi",
+          "nameAr": "طائفي",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "malablab",
+          "nameEn": "Malablab",
+          "nameAr": "ملبلب",
+          "priceAdd": 0,
+          "isDefault": false
+        }
+      ],
+      "ingredients": [
+        {
+          "nameEn": "White flour dough",
+          "nameAr": "عجينة دقيق أبيض"
+        },
+        {
+          "nameEn": "Salt",
+          "nameAr": "ملح"
+        },
+        {
+          "nameEn": "Yeast",
+          "nameAr": "خميرة"
+        }
+      ],
+      "allergies": [
+        "gluten"
+      ],
+      "availableExtras": [
+        "extra_ghee",
+        "extra_cheddar"
+      ]
+    },
+    {
+      "id": "black_tea",
+      "nameEn": "Black tea",
+      "nameAr": "شاي أحمر",
+      "price": 1,
+      "calories": 40,
+      "category": "hot_drinks",
+      "cookingOptions": [
+        {
+          "id": "local",
+          "nameEn": "Local",
+          "nameAr": "محلي",
+          "priceAdd": 0,
+          "isDefault": true
+        },
+        {
+          "id": "outside",
+          "nameEn": "Outside",
+          "nameAr": "خارجي",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "spices",
+          "nameEn": "Spices",
+          "nameAr": "بهارات",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "mint",
+          "nameEn": "Mint",
+          "nameAr": "نعناع",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "basil",
+          "nameEn": "Basil",
+          "nameAr": "حبق",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "sugar",
+          "nameEn": "Sugar",
+          "nameAr": "سكر",
+          "priceAdd": 0,
+          "isDefault": false
+        }
+      ],
+      "ingredients": [
+        {
+          "nameEn": "Tea bag",
+          "nameAr": "شاي فتلة"
+        }
+      ],
+      "allergies": [],
+      "availableExtras": []
+    },
+    {
+      "id": "milk_tea",
+      "nameEn": "Milk tea",
+      "nameAr": "شاي حليب",
+      "price": 2,
+      "calories": 120,
+      "category": "hot_drinks",
+      "cookingOptions": [
+        {
+          "id": "local",
+          "nameEn": "Local",
+          "nameAr": "محلي",
+          "priceAdd": 0,
+          "isDefault": true
+        },
+        {
+          "id": "outside",
+          "nameEn": "Outside",
+          "nameAr": "خارجي",
+          "priceAdd": 0,
+          "isDefault": false
+        },
+        {
+          "id": "sugar",
+          "nameEn": "Sugar",
+          "nameAr": "سكر",
+          "priceAdd": 0,
+          "isDefault": false
+        }
+      ],
+      "ingredients": [
+        {
+          "nameEn": "Tea bag",
+          "nameAr": "شاي فتلة"
+        },
+        {
+          "nameEn": "Steamed milk",
+          "nameAr": "حليب مبخر"
+        }
+      ],
+      "allergies": [
+        "dairy"
+      ],
+      "availableExtras": []
+    }
+  ],
+  "sizeOptions": [
+    {
+      "id": "cup",
+      "nameEn": "Cup",
+      "nameAr": "كوب",
+      "priceAdd": 0
+    },
+    {
+      "id": "small",
+      "nameEn": "Small",
+      "nameAr": "صغير",
+      "priceAdd": 0
+    },
+    {
+      "id": "large",
+      "nameEn": "Large",
+      "nameAr": "كبير",
+      "priceAdd": 0
+    }
+  ],
+  "extrasOptions": [
+    {
+      "id": "extra_honey",
+      "nameEn": "Honey",
+      "nameAr": "عسل",
+      "price": 2,
+      "calories": 215,
+      "allergyIds": []
+    },
+    {
+      "id": "extra_cream",
+      "nameEn": "Cream",
+      "nameAr": "قشطة",
+      "price": 3,
+      "calories": 330,
+      "allergyIds": [
+        "dairy"
+      ]
+    },
+    {
+      "id": "extra_nutella",
+      "nameEn": "Nutella",
+      "nameAr": "شوكولاتة نوتيلا",
+      "price": 4,
+      "calories": 433,
+      "allergyIds": [
+        "nuts"
+      ]
+    },
+    {
+      "id": "extra_cashew",
+      "nameEn": "Cashew",
+      "nameAr": "كاجو",
+      "price": 3,
+      "calories": 222,
+      "allergyIds": [
+        "nuts"
+      ]
+    },
+    {
+      "id": "extra_pistachio",
+      "nameEn": "Pistachio",
+      "nameAr": "فستق",
+      "price": 4,
+      "calories": 226,
+      "allergyIds": [
+        "nuts"
+      ]
+    },
+    {
+      "id": "extra_cornflakes",
+      "nameEn": "Cornflakes",
+      "nameAr": "كورن فلكس",
+      "price": 3,
+      "calories": 90,
+      "allergyIds": [
+        "gluten"
+      ]
+    },
+    {
+      "id": "extra_cheddar",
+      "nameEn": "Cheddar",
+      "nameAr": "جبنة شيدر",
+      "price": 3,
+      "calories": 161,
+      "allergyIds": [
+        "dairy"
+      ]
+    },
+    {
+      "id": "extra_milk",
+      "nameEn": "Milk",
+      "nameAr": "حليب",
+      "price": 3,
+      "calories": 65,
+      "allergyIds": [
+        "dairy"
+      ]
+    },
+    {
+      "id": "extra_date_paste",
+      "nameEn": "Date paste",
+      "nameAr": "عجينة تمر",
+      "price": 2,
+      "calories": 224,
+      "allergyIds": []
+    },
+    {
+      "id": "extra_banana",
+      "nameEn": "Banana",
+      "nameAr": "موز",
+      "price": 2,
+      "calories": 105,
+      "allergyIds": []
+    },
+    {
+      "id": "extra_white_cheese",
+      "nameEn": "White cheese",
+      "nameAr": "جبنة بيضاء",
+      "price": 3,
+      "calories": 258,
+      "allergyIds": [
+        "dairy"
+      ]
+    },
+    {
+      "id": "extra_olive_oil",
+      "nameEn": "Olive oil",
+      "nameAr": "زيت زيتون",
+      "price": 2,
+      "calories": 251,
+      "allergyIds": []
+    },
+    {
+      "id": "extra_ghee",
+      "nameEn": "Ghee",
+      "nameAr": "سمن",
+      "price": 2,
+      "calories": 254,
+      "allergyIds": [
+        "dairy"
+      ]
+    },
+    {
+      "id": "extra_liquid_cheese",
+      "nameEn": "Processed cheese",
+      "nameAr": "جبنة سائلة",
+      "price": 3,
+      "calories": 169,
+      "allergyIds": [
+        "dairy"
+      ]
+    },
+    {
+      "id": "extra_egg",
+      "nameEn": "Egg",
+      "nameAr": "بيض",
+      "price": 3,
+      "calories": 80,
+      "allergyIds": [
+        "eggs"
+      ]
+    },
+    {
+      "id": "extra_tuna",
+      "nameEn": "Tuna",
+      "nameAr": "تونة",
+      "price": 3,
+      "calories": 170,
+      "allergyIds": [
+        "fish"
+      ]
+    }
+  ],
+  "offers": [
+    {
+      "id": "offer1",
+      "titleEn": "Masoub & tea",
+      "titleAr": "معصوب وشاي",
+      "descriptionEn": "Cup masoub with black tea",
+      "descriptionAr": "كوب معصوب مع شاي أحمر",
+      "discount": "15%",
+      "originalPrice": 6,
+      "offerPrice": 5,
+      "isActive": true,
+      "items": [
+        {
+          "menuItemId": "masoub",
+          "nameEn": "Masoub",
+          "nameAr": "معصوب",
+          "qty": 1
+        },
+        {
+          "menuItemId": "black_tea",
+          "nameEn": "Black tea",
+          "nameAr": "شاي أحمر",
+          "qty": 1
+        }
+      ]
+    }
+  ],
+  "restaurants": []
+}

@@ -321,6 +321,16 @@ function toFirestoreValue(value) {
     return { timestampValue: value.toISOString() };
   }
 
+  if (Array.isArray(value)) {
+    return { arrayValue: { values: value.map(toFirestoreValue) } };
+  }
+
+  if (typeof value === "object") {
+    return { mapValue: { fields: Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, toFirestoreValue(entry)]),
+    ) } };
+  }
+
   if (typeof value === "string") {
     return { stringValue: value };
   }
@@ -436,6 +446,7 @@ export function getAdminDb() {
 
   return {
     collection: (collection) => ({
+      get: () => firestoreList(credential, collection),
       doc: (id) => ({
         get: () => firestoreGet(credential, collection, id),
 
@@ -447,4 +458,24 @@ export function getAdminDb() {
       }),
     }),
   };
+}
+
+async function firestoreList(credential, collection) {
+  const token = await getAccessToken(credential);
+  const docs = [];
+  let pageToken = "";
+  do {
+    const params = new URLSearchParams({ pageSize: "300" });
+    if (pageToken) params.set("pageToken", pageToken);
+    const url = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(credential.projectId)}/databases/(default)/documents/${encodeURIComponent(collection)}?${params}`;
+    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store", signal: AbortSignal.timeout(10000) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(`Firestore list failed (${response.status})`);
+    docs.push(...(result.documents || []).map((entry) => ({
+      id: entry.name.split("/").at(-1), data: () => unwrapFirestoreFields(entry.fields),
+    })));
+    pageToken = result.nextPageToken || "";
+    if (docs.length > 3000) throw new Error("Catalog collection limit exceeded");
+  } while (pageToken);
+  return { docs };
 }

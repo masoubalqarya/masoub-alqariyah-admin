@@ -2,6 +2,20 @@
 
 Living project context for AI agents. Keep this file accurate; prefer it over stale assumptions.
 
+## Mobile AI ordering backend (2026-10-31)
+
+Completion follow-up (2026-11-05): checkout resolves an already-created order before fresh catalog reads, including during catalog outages. Incomplete text responses cannot execute tools; a later edit invalidates an earlier review request in the same text turn. Malformed extra selections and missing checkout input return domain validation errors. The 20 server tests cover these cases. The mobile runbook includes a read-only setup checker and exact PowerShell setup/TTL/client build instructions. The configured API key still returns 401 on a model-access probe; server Firebase credentials and live device/POS acceptance remain outstanding. No order fields/statuses/rules changed.
+
+`POST /api/ai-ordering` is a customer-token API, separate from staff page access. It defaults off (`AI_ORDERING_ENABLED=false`); supports optional `AI_ORDERING_ALLOWED_UIDS` pilot restriction and explicit browser origins. Runtime is Node with a 60-second route budget. Setup variables are in `.env.ai-ordering.example`; the mobile repository's `docs/voice-ordering.md` contains the full architecture, setup and device/POS checklist. No deployment/live order was performed. A bounded manual AI check on a local seed fixture returned HTTP 401; successful live provider/device/POS acceptance remains outstanding, and Firebase server credentials are absent in this environment.
+
+`src/lib/ordering/engine.js` is the pure runtime-validated catalog/cart/order boundary; `openai.js` owns the OpenAI adapter and Saudi Arabic instructions; `service.js` handles fresh catalog reads, receipts, rate counters and deterministic create-only checkout; `security.js` bounds/authenticates requests. Models default to `gpt-realtime-2.1` (unified WebRTC SDP session exchange) and `gpt-5.4-mini` (Responses text tool loop). Only OpenAI is implemented; model IDs/voice are environment configurable. Permanent keys stay on the server. Reuse the existing Firebase REST credentials/helper, not the firebase-admin SDK. Its helper now supports collection reads and recursive map/array encoding.
+
+The mobile Zustand cart remains the only cart; the backend validates submitted snapshots and mobile revision checks prevent stale results overwriting manual changes. No AI-only cart collection. `orderingOperations` stores UID-scoped hashed idempotency keys/request hashes and cart-only results with 24-hour `expiresAt`; no audio, transcripts or SDP are stored. `orderingRateLimits` stores hashed CAS counters with `expiresAt`. Both are server-only under default-deny client rules; configure TTL in Firestore before pilot use. Limits: 40 requests/minute/UID, 100 text/day/UID, 3 voice initializations/day/UID and configurable global paid request/day limit (default 500). The mobile five-minute voice timer is client-side, not a trusted cost cap; keep pilot restrictions until stronger session/usage enforcement is added for public rollout.
+
+Tools can read the catalog and atomically edit supported ordinary cart lines. They cannot remove ingredients, edit offer groups, submit or pay. `proceedToCheckout` only requests customer review. The mobile app retains restaurant → car → payment confirmation; assisted checkout reprices and creates the existing POS-compatible `orders` payload with `status: pending`, deterministic document ID and create-only semantics. No new order fields/statuses/rules or POS pipeline. Manual website ordering is unchanged; the website can reuse the API in a future QR UI. Existing card-method orders do not represent an integrated payment-gateway charge.
+
+Tests: `npm run test:ordering` (Node 22+), including real mobile seed fixtures, mocked model calls, duplicate/concurrent checkout, authentication/body limits and CAS rate limits. `ordering_request` console logs carry action/error code, elapsed time and text usage only, without customer text, tokens or car details. Device audio, live API and live POS delivery are external acceptance gates.
+
 ## Mandatory maintenance
 
 **After every change you make in this repository, update `AGENTS.md` in the same turn** so it stays consistent with the codebase.
@@ -47,7 +61,7 @@ Users → Employees has an admin-only demo attendance upload action. `src/lib/at
 
 | | |
 | --- | --- |
-| **Repo path** | `D:\Dev\React Native\clients\masoub-alqarya` |
+| **Repo path** | `C:\dev\masoub-alqarya` |
 | **Agent docs** | `AGENTS.md` in that repo (open via multi-root workspace) |
 | **Copilot docs** | `.github/copilot-instructions.md` in that repo |
 | **Owns** | Customer ordering UI, cart, car plate, payment flow, Track Order, customer Auth → `customers/{uid}` (guest checkout via anonymous auth) |
@@ -57,7 +71,7 @@ Users → Employees has an admin-only demo attendance upload action. `src/lib/at
 
 | | |
 | --- | --- |
-| **Repo path** | `D:\Dev\Web\clients\masoub-alqarya-website` |
+| **Repo path** | `C:\dev\masoub-alqariyah-website` |
 | **Agent docs** | `AGENTS.md` in that repo (open via multi-root workspace) |
 | **Copilot docs** | `.github/copilot-instructions.md` in that repo |
 | **Owns** | Marketing site + web drive-through ordering (guest checkout via anonymous auth; full account for `/orders`); public `/privacy`, `/terms`, `/delete-account`, and `/support` pages |

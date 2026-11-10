@@ -2,12 +2,22 @@
 
 Companion to [`AGENTS.md`](../AGENTS.md). Prefer AGENTS.md for living project context; keep both files aligned when architecture changes.
 
+## Customer AI ordering API
+
+Completion follow-up (2026-11-05): resolve existing checkout IDs before catalog reads so retries survive catalog outages. Incomplete provider text responses never execute tools, later edits invalidate earlier review requests, and malformed extras/checkout input return validation errors. Covered by 20 backend tests. The mobile runbook contains exact external setup instructions and its read-only checker; live model/device/POS acceptance and trusted voice usage enforcement still gate rollout. Shared order payload/status/rules remain unchanged.
+
+`POST /api/ai-ordering` is a Node customer Firebase-token endpoint, feature-flagged off by default. `AI_ORDERING_ENABLED`, optional pilot UID allowlist, browser origins, OpenAI model/key configuration and daily paid-request ceiling are documented in `.env.ai-ordering.example` and the mobile `docs/voice-ordering.md`. It reuses `firebaseAdmin.js` REST credentials/collection reads/nested encoding. No private key or AI key may enter public environment variables.
+
+`src/lib/ordering/` contains the pure canonical catalog pricing/tool boundary, OpenAI provider, auth/body validation, durable receipt/rate-counter CAS operations and deterministic create-only checkout. Models are configurable (`gpt-realtime-2.1` voice, `gpt-5.4-mini` text by default). Voice SDP is proxied through the unified Realtime API; tools remain server validated. No separate AI cart: mobile projects responses into its existing Zustand cart only if its revision matches. No ingredient removal or voice offer editing. The model cannot submit/pay; existing customer checkout confirmation is required. Existing `orders` payload/status/POS listeners stay compatible.
+
+`orderingOperations` and `orderingRateLimits` are server-only/default-denied collections. Enable TTL on `expiresAt`; receipts keep cart results/hashes, never conversation/audio/SDP. Limits: 40 requests/minute/UID, 100 text turns/day/UID, 3 voice initializations/day/UID, configurable global daily paid requests. Native client duration limits are not trusted server usage enforcement; retain pilot restrictions pending public-rollout hardening. Logs omit customer data and secrets. Tests: `npm run test:ordering` (Node 22+), no real AI calls or writes; device/live POS acceptance is still required.
+
 ## Project overview
 
 Next.js **App Router** admin panel for **Masoub AlQarya** (معصوب القرية). Staff manage menu, offers, restaurants, orders, users, analytics, and cashier POS. Firebase (Auth, Firestore, Storage). Currency **SAR**. Default UI **Arabic RTL**; English LTR toggleable.
 
-**Companion mobile app:** `D:\Dev\React Native\clients\masoub-alqarya`  
-**Companion customer website:** `D:\Dev\Web\clients\masoub-alqarya-website`  
+**Companion mobile app:** `C:\dev\masoub-alqarya`
+**Companion customer website:** `C:\dev\masoub-alqariyah-website`
 See those repos’ `AGENTS.md` and `.github/copilot-instructions.md`. Same Firebase project and order status contract. Website owns marketing + web order create (`src/lib/orders.js`). Mobile and website guest checkout use Anonymous Auth before `createOrder`.
 
 ## Tech stack

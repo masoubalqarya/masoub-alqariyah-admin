@@ -6,6 +6,12 @@ Domain models are documented as **JSDoc** in `src/types/index.js` (not TypeScrip
 
 Agent context for this repo lives in [`AGENTS.md`](./AGENTS.md). Copilot / IDE agent shortcuts: [`.github/copilot-instructions.md`](./.github/copilot-instructions.md).
 
+## Mobile voice ordering backend
+
+The feature-flagged customer endpoint `/api/ai-ordering` adds catalog-validated text/Realtime tools and idempotent checkout for the companion mobile app. It uses the existing Firebase REST credentials, normal `orders` documents and cashier listeners. The mobile cart/restaurant/car/payment workflow remains in place; the model cannot submit or pay. Card-method ordering has no integrated payment gateway.
+
+Copy [`.env.ai-ordering.example`](./.env.ai-ordering.example) into local server configuration and set the server-only OpenAI key, existing Firebase service account, allowed pilot UIDs and `AI_ORDERING_ENABLED=true` only for testing. Never use public-prefixed secrets. Enable Firestore TTL on `expiresAt` for server-only `orderingOperations` (24-hour receipts without transcript/audio) and `orderingRateLimits`. Default models are configurable: `gpt-realtime-2.1` and `gpt-5.4-mini`. Run `npm run test:ordering` on Node 22+; focused ESLint covers `src/lib/ordering` and the new route. The mobile repository's `docs/voice-ordering.md` has exact setup, cost assumptions and device/POS checks. Native/live API/POS validation and deployment remain outstanding; flags default off. Retain the pilot allowlist until trusted audio usage/session enforcement and public abuse controls are added.
+
 Companion apps (same Firebase):
 
 - **Mobile (Expo):** `D:\Dev\React Native\clients\masoub-alqarya`
