@@ -94,7 +94,7 @@ function AttendanceTable({ heads, rows, loading, error, empty, onSelect }) {
     <Card>
       <CardContent className="p-0">
         {error ? (
-          <p className="p-6 text-destructive">{t.attendanceLoadError}</p>
+          <p className="p-6 text-destructive">{t[error.code] || t.attendanceLoadError}</p>
         ) : (
           <Table>
             <TableHeader className="bg-muted/70">

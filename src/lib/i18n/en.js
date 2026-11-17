@@ -1,10 +1,30 @@
 const en = {
-      // Validation Errors
-    errorNameEnRequired: "English name is required",
-    errorNameArRequired: "Arabic name is required",
-    errorCategoryRequired: "Category is required",
-    errorPriceRequired: "Price must be greater than 0",
-    errorImageRequired: "Image is required",
+  // Fulfillment
+  inStock: "In stock",
+  outOfStock: "Out of stock",
+  featured: "Featured — show first",
+  featuredRank: "Featured order (lowest first)",
+  stockUpdateFailed: "Unable to update availability. Please try again.",
+  orderNotes: "Order notes",
+  fulfillmentMethod: "Order method",
+  driveThrough: "Car service",
+  pickup: "Pickup from branch",
+  driveThroughDescription: "We bring your order to your car.",
+  pickupDescription: "Collect inside your selected branch. No car details needed.",
+  pickupInstructions: "When your order is ready, collect it inside your selected branch using your order number.",
+  readyForPickup: "Ready for pickup",
+  collected: "Collected",
+  pickupCollectedMessage: "Your order has been collected. Enjoy your meal!",
+  pickupChange: "Collect your change at the counter.",
+  markReadyForPickup: "Ready for pickup",
+  markCollected: "Confirm collected",
+
+  // Validation Errors
+  errorNameEnRequired: "English name is required",
+  errorNameArRequired: "Arabic name is required",
+  errorCategoryRequired: "Category is required",
+  errorPriceRequired: "Price must be greater than 0",
+  errorImageRequired: "Image is required",
 
   // General
   appName: "Masoub AlQarya Admin",
@@ -125,7 +145,8 @@ const en = {
   confirmDeleteAllergy: "Are you sure you want to delete this allergy?",
   noIngredients: "No ingredients listed.",
   noAllergies: "No allergies listed.",
-  noAllergiesOptions: "No allergies defined yet. Add them in the Allergies tab first.",
+  noAllergiesOptions:
+    "No allergies defined yet. Add them in the Allergies tab first.",
   baseAllergies: "Base Allergies",
   triggeredAllergies: "Triggered Allergies",
   extraAllergiesHint:
@@ -216,9 +237,11 @@ const en = {
   noEmployees: "No employees have been added yet.",
   confirmDeleteEmployee: "Are you sure you want to delete this employee?",
   uploadDemoAttendance: "Upload demo attendance",
-  demoUploadDescription: "Creates a demo night shift, employees with device IDs 2–10, and synthetic punches for August, September, and the current month to date. Existing employees and raw events are never overwritten. This data remains until manually removed.",
+  demoUploadDescription:
+    "Creates a demo night shift, employees with device IDs 2–10, and synthetic punches for August, September, and the current month to date. Existing employees and raw events are never overwritten. This data remains until manually removed.",
   demoMorningShift: "Morning shift for demo employees",
-  demoMorningShiftRequired: "Create an active Fajr morning shift in Attendance Settings before uploading demo data.",
+  demoMorningShiftRequired:
+    "Create an active Fajr morning shift in Attendance Settings before uploading demo data.",
   demoUploadComplete: "Demo upload complete",
   demoUploadFailed: "Demo upload stopped. You can safely retry",
   demoEventsCreated: "events created",
@@ -240,12 +263,17 @@ const en = {
   lastPunch: "Last Punch",
   numberOfPunches: "Number of Punches",
   attendanceLoadError: "Attendance data could not be loaded.",
+  attendanceAuthRequired: "Your session could not be verified. Sign out and sign in again.",
+  attendanceAccessDenied: "Attendance requires an active administrator account.",
+  attendanceServerConfiguration: "Attendance server credentials are missing or invalid. Configure the server's Firebase service account and restart the server.",
+  attendanceServerUnavailable: "The attendance server could not verify access. Please try again; if this continues, check the server logs.",
   tryAgain: "Try Again",
   noActiveEmployees: "There are no active employees.",
   rawStatus: "Raw status",
   rawVerifyType: "Raw verification type",
   noPunches: "No punches for this employee on the selected date.",
-  duplicateAttendanceDeviceId: "This attendance device ID is already assigned to another employee.",
+  duplicateAttendanceDeviceId:
+    "This attendance device ID is already assigned to another employee.",
   assignedShift: "Assigned Shift",
   fajrShift: "Morning (Fajr) shift",
   maghribShift: "Night (Maghrib) shift",
@@ -254,7 +282,8 @@ const en = {
   employeeStartOffset: "Arrival adjustment (minutes)",
   employeeEndOffset: "Departure adjustment (minutes)",
   weeklyOffDays: "Weekly days off",
-  weeklyOffDaysHint: "Unselected days count as working days in monthly reports.",
+  weeklyOffDaysHint:
+    "Unselected days count as working days in monthly reports.",
   dayOff: "Day Off",
   weekdayNames: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
   monthlyReport: "Monthly Report",
@@ -315,9 +344,12 @@ const en = {
   prayerCity: "Prayer city",
   prayerCountry: "Prayer country",
   prayerMethod: "Calculation method",
-  deductionPolicyExplanation: "Once total lateness reaches the threshold, all late minutes become deductible. No salary amount is calculated.",
-  invalidShiftConfiguration: "Enter both shift names, a valid end time, offsets, and grace period.",
-  invalidAttendancePolicy: "Enter a valid threshold, prayer location, and calculation method.",
+  deductionPolicyExplanation:
+    "Once total lateness reaches the threshold, all late minutes become deductible. No salary amount is calculated.",
+  invalidShiftConfiguration:
+    "Enter both shift names, a valid end time, offsets, and grace period.",
+  invalidAttendancePolicy:
+    "Enter a valid threshold, prayer location, and calculation method.",
   shiftNameEn: "Shift Name (English)",
   shiftNameAr: "Shift Name (Arabic)",
   startPrayer: "Start Prayer",
@@ -325,16 +357,6 @@ const en = {
   gracePeriod: "Grace",
   gracePeriodMinutes: "Grace period (minutes)",
   endNextDay: "Ends next day",
-
-  // POS
-  posTitle: "Point of Sale",
-  newOrders: "New Orders",
-  activeOrders: "Active Orders",
-  completedOrders: "Completed",
-  noOrders: "No orders in this column",
-  orderReceived: "New order received!",
-  todayOrders: "Today's Orders",
-  todayRevenue: "Today's Revenue",
 
   // Attendance shift time
   endTime: "End Time",

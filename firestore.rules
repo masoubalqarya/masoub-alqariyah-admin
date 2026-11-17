@@ -20,12 +20,12 @@ service cloud.firestore {
 
     // Helper: Check if user is an admin
     function isAdmin() {
-      return userExists() && getUserRole() == 'admin';
+      return userExists() && getUserRole() == 'admin' && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true;
     }
 
     // Helper: Check if user is a cashier
     function isCashier() {
-      return userExists() && getUserRole() == 'cashier';
+      return userExists() && getUserRole() == 'cashier' && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true;
     }
 
     // Helper: Get cashier's restaurant ID (only call after isCashier())
@@ -131,16 +131,50 @@ service cloud.firestore {
     }
 
     // Orders - Admin full access, cashier read/update own restaurant orders.
-    // Authenticated customers (including anonymous guests) can create orders.
+    // Authenticated customers (including anonymous guests) use submitCustomerOrder.
     // The creating customer can read their own order for track/history.
+    match /orderCounters/{counterId} {
+      allow read, write: if false;
+    }
     match /orders/{orderId} {
       allow read: if isAdmin() ||
         (isCashier() && resource.data.restaurantId == getCashierRestaurant()) ||
         (isAuthenticated() && resource.data.userId == request.auth.uid);
-      allow create: if isAuthenticated();
-      allow update: if isAdmin() ||
-        (isCashier() && resource.data.restaurantId == getCashierRestaurant());
+      // submitCustomerOrder atomically allocates the daily number and creates the order.
+      allow create: if false;
+      // The admin portal still writes status metadata directly. Keep order
+      // contents, customer identity and daily receipt numbers server-managed.
+      allow update: if (isAdmin() ||
+        (isCashier() && resource.data.restaurantId == getCashierRestaurant())) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'updatedAt', 'statusHistory']) &&
+        request.resource.data.status in ['pending', 'preparing', 'onTheWay', 'delivered', 'cancelled'];
       allow delete: if isAdmin();
+      match /posStatusHistory/{entryId} {
+        allow read: if isAdmin() || (isCashier() && resource.data.restaurantId == getCashierRestaurant());
+        allow write: if false;
+      }
+    }
+
+    function canReadBranch(restaurantId) {
+      return isAdmin() || (isCashier() && restaurantId == getCashierRestaurant());
+    }
+    match /posPayments/{orderId} {
+      allow read: if canReadBranch(resource.data.restaurantId);
+      // Written only by a validated payment-provider backend (Admin SDK).
+      allow write: if false;
+    }
+    match /posBranches/{restaurantId} {
+      allow read: if canReadBranch(restaurantId);
+      allow write: if false;
+    }
+    match /posPrintJobs/{jobId} {
+      allow read: if canReadBranch(resource.data.restaurantId);
+      allow write: if false;
+    }
+    match /posIssues/{issueId} {
+      allow read: if canReadBranch(resource.data.restaurantId);
+      allow write: if false;
     }
   }
 }

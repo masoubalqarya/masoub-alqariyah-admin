@@ -10,6 +10,32 @@ const CONNECTED_THRESHOLD_MS = 15 * 60 * 1000;
 
 export const getRiyadhDateKey = dateKeyInRiyadh;
 
+async function prayerRequest(url, options = {}) {
+  await auth.authStateReady();
+  const user = auth.currentUser;
+  if (!user) {
+    const error = new Error("Not authenticated");
+    error.code = "attendanceAuthRequired";
+    throw error;
+  }
+  const send = async (forceRefresh) => fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      Authorization: `Bearer ${await user.getIdToken(forceRefresh)}`,
+    },
+  });
+  let response = await send(false);
+  if (response.status === 401) response = await send(true);
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(body.error || `Prayer times request failed (${response.status})`);
+    error.code = body.code;
+    throw error;
+  }
+  return body;
+}
+
 export function useAttendanceEvents(startDate, endDate, enabled = true) {
   const [events, setEvents] = useState([]);
   const [loadedKey, setLoadedKey] = useState(null);
@@ -94,13 +120,7 @@ export function usePrayerMonth(year, month, enabled = true, configurationKey = "
     if (!enabled) return;
     let cancelled = false;
     async function load() {
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) throw new Error("Not authenticated");
-      const response = await fetch(`/api/attendance/prayer-times?year=${year}&month=${month}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error(`Prayer times request failed (${response.status})`);
-      const body = await response.json();
+      const body = await prayerRequest(`/api/attendance/prayer-times?year=${year}&month=${month}`);
       return Object.fromEntries(body.days.map((day) => [day.date, day]));
     }
     load()
@@ -136,16 +156,10 @@ export function usePrayerRange(startDate, endDate, enabled = true, configuration
     if (!enabled) return;
     let cancelled = false;
     async function load() {
-      const token = await auth.currentUser?.getIdToken();
-      if (!token) throw new Error("Not authenticated");
       const months = [...new Set(dateKeysInRange(startDate, endDate, 368).map((date) => date.slice(0, 7)))];
       const calendars = await Promise.all(months.map(async (key) => {
         const [year, month] = key.split("-").map(Number);
-        const response = await fetch(`/api/attendance/prayer-times?year=${year}&month=${month}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!response.ok) throw new Error(`Prayer times request failed (${response.status})`);
-        return (await response.json()).days;
+        return (await prayerRequest(`/api/attendance/prayer-times?year=${year}&month=${month}`)).days;
       }));
       return Object.fromEntries(calendars.flat().map((day) => [day.date, day]));
     }
@@ -160,15 +174,9 @@ export function usePrayerRange(startDate, endDate, enabled = true, configuration
 }
 
 export async function savePrayerOverride({ date, fajr, maghrib, reason }) {
-  const token = await auth.currentUser?.getIdToken();
-  if (!token) throw new Error("Not authenticated");
-  const response = await fetch("/api/attendance/prayer-times", {
+  await prayerRequest("/api/attendance/prayer-times", {
     method: "PATCH",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ date, fajr, maghrib, reason }),
   });
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(body.error || "Unable to save prayer override");
-  }
 }

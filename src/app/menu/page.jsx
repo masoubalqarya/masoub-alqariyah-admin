@@ -90,6 +90,9 @@ const emptyForm = {
   calories: "",
   ingredients: [],
   allergies: [],
+  inStock: true,
+  isFeatured: false,
+  featuredRank: 0,
 };
 
 const emptyCooking = {
@@ -180,6 +183,9 @@ export default function MenuPage() {
       calories: item.calories ?? "",
       ingredients: item.ingredients || [],
       allergies: asIdList(item.allergies),
+      inStock: item.inStock !== false,
+      isFeatured: item.isFeatured === true,
+      featuredRank: Number.isFinite(item.featuredRank) ? item.featuredRank : 0,
     });
     setImagePreview(item.image || "");
     setImageFile(null);
@@ -420,6 +426,7 @@ export default function MenuPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <h1 className="text-2xl font-bold">{t.menuTitle}</h1>
+      {error && !itemDialog && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
       <Tabs defaultValue="items">
         <TabsList>
@@ -477,6 +484,21 @@ export default function MenuPage() {
                               </div>
                             )}
                             <div className="p-3 space-y-1">
+                              <div className="flex items-center justify-between gap-2 text-xs">
+                                <span>{item.inStock === false ? t.outOfStock : t.inStock}{item.isFeatured ? ` · ${t.featured}` : ""}</span>
+                                <Switch
+                                  checked={item.inStock !== false}
+                                  disabled={saving}
+                                  aria-label={`${t.inStock}: ${locale === "ar" ? item.nameAr : item.nameEn}`}
+                                  onCheckedChange={async (inStock) => {
+                                    setSaving(true);
+                                    setError("");
+                                    try { await updateMenuItem(item.id, { inStock }); }
+                                    catch { setError(t.stockUpdateFailed); }
+                                    finally { setSaving(false); }
+                                  }}
+                                />
+                              </div>
                               <h4 className="font-medium text-sm">
                                 {locale === "ar" ? item.nameAr : item.nameEn}
                               </h4>
@@ -878,6 +900,21 @@ export default function MenuPage() {
             </div>
           )}
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pe-2">
+            <div className="flex flex-wrap items-center gap-5 rounded-lg border p-3">
+              <label className="flex items-center gap-2 text-sm">
+                <Switch checked={form.inStock} onCheckedChange={(inStock) => setForm({ ...form, inStock })} />
+                {t.inStock}
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Switch checked={form.isFeatured} onCheckedChange={(isFeatured) => setForm({ ...form, isFeatured })} />
+                {t.featured}
+              </label>
+              {form.isFeatured && <label className="space-y-1 text-sm">
+                {t.featuredRank}
+                <Input type="number" min="0" step="1" value={form.featuredRank}
+                  onChange={(event) => setForm({ ...form, featuredRank: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} />
+              </label>}
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t.nameEn}</Label>

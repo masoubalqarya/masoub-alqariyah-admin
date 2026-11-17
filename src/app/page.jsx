@@ -7,6 +7,7 @@ import { useOrders } from "@/hooks/useOrders";
 import { useRestaurants } from "@/hooks/useRestaurants";
 import { useMenuItems } from "@/hooks/useMenu";
 import { formatSAR } from "@/lib/utils";
+import { isPickup, orderStatusKey } from "@/lib/fulfillment";
 import {
   ShoppingCart,
   DollarSign,
@@ -131,7 +132,7 @@ export default function DashboardPage() {
                       #{order.orderNumber}
                     </span>
                     <span className="text-sm text-muted-foreground">
-                      {order.plateNumber}
+                      {isPickup(order) ? t.pickup : order.plateNumber}
                     </span>
                   </div>
                   <div className="flex items-center gap-4">
@@ -146,7 +147,7 @@ export default function DashboardPage() {
                             ? "bg-blue-100 text-blue-800 border-blue-300"
                             : "bg-orange-100 text-orange-800 border-orange-300"
                       }`}>
-                      {t[order.status]}
+                      {t[orderStatusKey(order)]}
                     </span>
                   </div>
                 </div>

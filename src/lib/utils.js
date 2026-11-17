@@ -15,15 +15,6 @@ export function formatSAR(amount) {
 }
 
 /**
- * Generate a 5-digit order number string.
- * @returns {string}
- */
-export function generateOrderNumber() {
-  const num = Math.floor(Math.random() * 100000);
-  return num.toString().padStart(5, "0");
-}
-
-/**
  * Get time elapsed since a date, as a human-readable string.
  * @param {Date} date
  * @returns {string}

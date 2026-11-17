@@ -34,9 +34,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatSAR, statusColors, timeElapsed } from "@/lib/utils";
+import { isPickup, orderStatusKey } from "@/lib/fulfillment";
 import {
   Clock,
   Car,
+  ShoppingBag,
   CreditCard,
   Banknote,
   ChefHat,
@@ -55,7 +57,9 @@ function getNextStatus(current) {
   return statusFlow[idx + 1];
 }
 
-function getNextStatusLabel(next, t) {
+function getNextStatusLabel(next, t, order) {
+  if (isPickup(order) && next === "onTheWay") return t.markReadyForPickup;
+  if (isPickup(order) && next === "delivered") return t.markCollected;
   const map = {
     preparing: t.markPreparing,
     onTheWay: t.markOnTheWay,
@@ -147,8 +151,8 @@ export default function OrdersPage() {
             <SelectItem value="all">{t.allStatuses}</SelectItem>
             <SelectItem value="pending">{t.pending}</SelectItem>
             <SelectItem value="preparing">{t.preparing}</SelectItem>
-            <SelectItem value="onTheWay">{t.onTheWay}</SelectItem>
-            <SelectItem value="delivered">{t.delivered}</SelectItem>
+            <SelectItem value="onTheWay">{t.onTheWay} / {t.readyForPickup}</SelectItem>
+            <SelectItem value="delivered">{t.delivered} / {t.collected}</SelectItem>
             <SelectItem value="cancelled">{t.cancelled}</SelectItem>
           </SelectContent>
         </Select>
@@ -209,7 +213,7 @@ export default function OrdersPage() {
                         className={`text-xs px-2.5 py-1 rounded-full border font-medium ${
                           statusColors[order.status]
                         }`}>
-                        {t[order.status]}
+                        {t[orderStatusKey(order)]}
                       </span>
                     </div>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -226,12 +230,13 @@ export default function OrdersPage() {
                   <div className="p-4 space-y-3">
                     {/* Car Info */}
                     <div className="flex items-center gap-4 text-sm">
-                      <Car className="w-4 h-4 text-muted-foreground shrink-0" />
+                      {isPickup(order) ? <ShoppingBag className="w-4 h-4 text-muted-foreground shrink-0" /> : <Car className="w-4 h-4 text-muted-foreground shrink-0" />}
                       <span>
-                        {order.plateNumber} • {order.carModel} •{" "}
-                        {order.carColor}
+                        {isPickup(order) ? t.pickup : `${t.driveThrough} · ${[order.plateNumber, order.carModel, order.carColor].filter(Boolean).join(" • ")}`}
                       </span>
                     </div>
+
+                    {order.notes && <p className="whitespace-pre-wrap break-words rounded-md bg-amber-50 p-2 text-sm text-amber-900"><strong>{t.orderNotes}:</strong> {order.notes}</p>}
 
                     {/* Items Summary */}
                     <div className="text-sm text-muted-foreground">
@@ -291,12 +296,12 @@ export default function OrdersPage() {
                         ) : (
                           <>
                             {React.createElement(
-                              getNextStatusIcon(nextStatus),
+                              isPickup(order) && nextStatus === "onTheWay" ? ShoppingBag : getNextStatusIcon(nextStatus),
                               {
                                 className: "w-4 h-4",
                               },
                             )}
-                            {getNextStatusLabel(nextStatus, t)}
+                            {getNextStatusLabel(nextStatus, t, order)}
                           </>
                         )}
                       </Button>
@@ -354,7 +359,13 @@ export default function OrdersPage() {
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-4">
+              {selectedOrder.notes && <p className="whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-sm"><strong>{t.orderNotes}:</strong> {selectedOrder.notes}</p>}
               <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="col-span-2">
+                  <span className="text-muted-foreground">{t.fulfillmentMethod}:</span>
+                  <p className="font-medium">{isPickup(selectedOrder) ? t.pickup : t.driveThrough}</p>
+                </div>
+                {!isPickup(selectedOrder) && <>
                 <div>
                   <span className="text-muted-foreground">
                     {t.plateNumber}:
@@ -369,6 +380,7 @@ export default function OrdersPage() {
                   <span className="text-muted-foreground">{t.carColor}:</span>
                   <p className="font-medium">{selectedOrder.carColor}</p>
                 </div>
+                </>}
                 <div>
                   <span className="text-muted-foreground">
                     {t.paymentMethod}:

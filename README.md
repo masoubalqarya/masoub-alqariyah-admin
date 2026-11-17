@@ -13,32 +13,35 @@ Companion apps (same Firebase):
 
 ---
 
+## Pickup and car service
+
+Customers can choose car service or pickup inside the selected branch in the mobile app and website. Pickup skips car details and uses the order number for collection. Orders share `fulfillmentType` (`driveThrough` or `pickup`); older orders remain car service. For pickup, the existing `onTheWay` status is shown as **Ready for pickup** and `delivered` as **Collected**. The admin portal and POS show the method and matching actions, and POS receipt/kitchen tickets identify branch pickup.
+
 ## Features
 
-| Page                             | Description                                                              |
-| -------------------------------- | ------------------------------------------------------------------------ |
-| **Dashboard** (`/`)              | KPI cards, recent active orders overview                                 |
-| **Orders** (`/orders`)           | Real-time live orders with status management, filters, audit trail       |
-| **Menu** (`/menu`)               | Full menu CRUD — items, categories, sizes, extras, allergies (image optional) |
-| **Offers** (`/offers`)           | Manage promotional offers with images                                    |
-| **Restaurants** (`/restaurants`) | Manage restaurant locations, open/closed toggle                          |
-| **Users** (`/users`)             | Create and manage admin/cashier staff accounts                           |
+| Page                             | Description                                                                                               |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Dashboard** (`/`)              | KPI cards, recent active orders overview                                                                  |
+| **Orders** (`/orders`)           | Real-time live orders with status management, filters, audit trail                                        |
+| **Menu** (`/menu`)               | Full menu CRUD — items, categories, sizes, extras, allergies (image optional)                             |
+| **Offers** (`/offers`)           | Manage promotional offers with images                                                                     |
+| **Restaurants** (`/restaurants`) | Manage restaurant locations, open/closed toggle                                                           |
+| **Users** (`/users`)             | Create and manage admin/cashier staff accounts                                                            |
 | **Attendance** (`/attendance`)   | Two daily prayer-based shifts, raw punches, corrections, custom-range report, settings, and device status |
-| **Analytics** (`/analytics`)     | Charts & KPIs — orders over time, revenue, payment breakdown             |
-| **POS** (`/pos`)                 | Cashier-only kanban board for restaurant orders                          |
-| **Login** (`/login`)             | Email/password authentication                                            |
+| **Analytics** (`/analytics`)     | Charts & KPIs — orders over time, revenue, payment breakdown                                              |
+| **Login** (`/login`)             | Email/password authentication                                                                             |
 
 ### Roles
 
-| Role       | Access                                                                 |
-| ---------- | ---------------------------------------------------------------------- |
-| `admin`    | Full sidebar UI (all pages except `/pos`)                              |
-| `cashier`  | `/pos` only — scoped to their assigned `restaurantId`                  |
-| `user`     | Mobile/website customers — blocked from this admin panel           |
+| Role      | Access                                                   |
+| --------- | -------------------------------------------------------- |
+| `admin`   | Full sidebar UI                                          |
+| `cashier` | nothing, used by the POS app                             |
+| `user`    | Mobile/website customers — blocked from this admin panel |
 
 ### Additional Features
 
-- **Bilingual UI** (Arabic RTL default + English LTR) — switchable from sidebar / POS
+- **Bilingual UI** (Arabic RTL default + English LTR) — switchable from sidebar
 - **Real-time updates** via Firestore `onSnapshot` listeners
 - **Image uploads** to Firebase Storage (`menuItems/`, `offers/`, `restaurants/`)
 - **Employee attendance** from a ZKTeco SenseFace 2A with an independent employee roster
@@ -166,7 +169,7 @@ src/
 │   ├── iclock/[...path]/     # Public ZKTeco PUSH endpoint
 │   ├── api/users/[uid]/     # DELETE Auth + Firestore staff user
 │   ├── analytics/page.jsx   # Analytics with charts
-│   └── pos/page.jsx         # Cashier POS / kitchen board
+│
 ├── components/
 │   ├── AppShell.jsx         # Auth guard, role redirects, layout
 │   ├── Sidebar.jsx          # Admin navigation
@@ -196,26 +199,26 @@ src/
 
 ## Firestore Collections
 
-| Collection      | Description                                                    |
-| --------------- | -------------------------------------------------------------- |
-| `categories`    | Menu categories (public read; admin write)                     |
-| `menuItems`     | Menu items with cooking options (public read; admin write)     |
-| `sizeOptions`   | Size catalog cup/small/large (public read; admin write)        |
-| `extrasOptions` | Extra add-ons; `calories`, `allergyIds` (public read; admin write) |
-| `allergiesOptions` | Allergy catalog (public read; admin write)                    |
-| `offers`        | Promotional combo offers (public read; admin write)            |
-| `restaurants`   | Locations and open/closed state (public read; admin write)     |
-| `orders`        | Orders from mobile, website, or staff (role-scoped read/update; creating customer can read own) |
-| `users`         | Staff profiles keyed by Auth UID                               |
-| `shifts`        | Historical cashier clock records; no client access or new writes |
-| `employees`     | Independent attendance roster with optional terminal `zkUserId`, up to two `shiftIds`, minute offsets, and weekly days off |
-| `attendanceEvents` | Immutable raw SenseFace punches; server write, admin read   |
-| `attendanceDevices` | SenseFace model, serial, and rate-limited heartbeat        |
-| `shiftTemplates` | Admin-managed Fajr/Maghrib attendance shifts |
-| `attendanceSettings/default` | Monthly lateness threshold and prayer location/method |
-| `prayerTimes/{YYYY-MM-DD}` | Server-cached AlAdhan Fajr/Maghrib times and reasoned manual overrides |
-| `attendanceOverrides/{employeeId}_{shiftDate}_{shiftId}` | Admin per-shift corrections with reason; legacy date-only corrections remain readable |
-| `customers`     | Customer profiles (`customers/{uid}`) written by mobile/website on sign-up; owner read/create/update; admin delete |
+| Collection                                               | Description                                                                                                                |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `categories`                                             | Menu categories (public read; admin write)                                                                                 |
+| `menuItems`                                              | Menu items with cooking options (public read; admin write)                                                                 |
+| `sizeOptions`                                            | Size catalog cup/small/large (public read; admin write)                                                                    |
+| `extrasOptions`                                          | Extra add-ons; `calories`, `allergyIds` (public read; admin write)                                                         |
+| `allergiesOptions`                                       | Allergy catalog (public read; admin write)                                                                                 |
+| `offers`                                                 | Promotional combo offers (public read; admin write)                                                                        |
+| `restaurants`                                            | Locations and open/closed state (public read; admin write)                                                                 |
+| `orders`                                                 | Orders from mobile, website, or staff (role-scoped read/update; creating customer can read own)                            |
+| `users`                                                  | Staff profiles keyed by Auth UID                                                                                           |
+| `shifts`                                                 | Historical cashier clock records; no client access or new writes                                                           |
+| `employees`                                              | Independent attendance roster with optional terminal `zkUserId`, up to two `shiftIds`, minute offsets, and weekly days off |
+| `attendanceEvents`                                       | Immutable raw SenseFace punches; server write, admin read                                                                  |
+| `attendanceDevices`                                      | SenseFace model, serial, and rate-limited heartbeat                                                                        |
+| `shiftTemplates`                                         | Admin-managed Fajr/Maghrib attendance shifts                                                                               |
+| `attendanceSettings/default`                             | Monthly lateness threshold and prayer location/method                                                                      |
+| `prayerTimes/{YYYY-MM-DD}`                               | Server-cached AlAdhan Fajr/Maghrib times and reasoned manual overrides                                                     |
+| `attendanceOverrides/{employeeId}_{shiftDate}_{shiftId}` | Admin per-shift corrections with reason; legacy date-only corrections remain readable                                      |
+| `customers`                                              | Customer profiles (`customers/{uid}`) written by mobile/website on sign-up; owner read/create/update; admin delete         |
 
 ### Orders Collection Schema
 
@@ -277,6 +280,10 @@ The report defaults to the latest completed 28th–27th period. Its start/end da
 
 The admin-authenticated prayer-time route fetches AlAdhan's monthly city calendar (default Jeddah, Saudi Arabia, Umm Al-Qura method 4) only when needed. It caches each day in `prayerTimes` and keeps manual date overrides even when the provider configuration changes. This uses the existing server credential; no new environment variable or Firestore composite index is needed. Deploy updated `firestore.rules` before opening the new admin UI.
 
+Attendance also requires server Firebase credentials, even when browser Firebase login and other dashboard pages work. Set `FIREBASE_SERVICE_ACCOUNT_BASE64` (base64 of the shared `masoub-alqarya` service-account JSON), `FIREBASE_SERVICE_ACCOUNT` (JSON), or `FIREBASE_CLIENT_EMAIL` and `FIREBASE_PRIVATE_KEY` with `FIREBASE_PROJECT_ID=masoub-alqarya`. Keep these server-only in the admin project's local environment or hosting settings; restart the development server or redeploy after changing them. Do not paste private keys into chat or commit them.
+
+Prayer API errors distinguish 401 (missing/invalid session), 403 (account is not an active admin), and 503 (server credentials or authorization services unavailable). The client waits for Firebase Auth initialization, refreshes its token once after 401, and displays the relevant translated error. Server logs record the underlying cause without logging tokens. Changing Firestore rules cannot supply the credentials used by this API.
+
 For report testing, Users → Employees has an **Upload demo attendance** button (admin only). Select an existing active Fajr morning shift and confirm. It creates a tagged Maghrib-to-02:00 demo night shift, up to nine tagged employees with terminal IDs 2–10 and both shift assignments, and synthetic raw punches for August and September 2026 plus the current month to date (from October 2026 onward). Rerunning the upload adds the complementary assignment and missing punches to existing tagged demo employees without changing stored raw events. Scenarios include on-time/late arrivals, 59/60/78-minute original-shift totals around the default threshold, absences, single punches, four-punch days, overnight departures, and a tagged 20-minute manual waiver. These are synthetic `source: "demo"` events, never sent through `/iclock`; the real device ID 1 and its events are untouched. Existing staff mappings for IDs 2–10 are skipped. The upload is deterministic and safe to retry; there is no automatic cleanup. Demo employee `createdAt` is backdated to August 1 so historical reports include them. No new environment variable or composite index is needed; deploy with the existing Firebase Admin credentials and updated rules.
 
 Monthly Option B uses the configured threshold (default 60 minutes): `deductionApplies = totalLateMinutes >= monthlyLateThresholdMinutes`; `deductibleMinutes = deductionApplies ? totalLateMinutes : 0`. All minutes become deductible once the threshold is met. No SAR salary calculation is performed.
@@ -285,11 +292,15 @@ Monthly Option B uses the configured threshold (default 60 minutes): `deductionA
 
 ## Firestore Security Rules
 
-See `firestore.rules` and `storage.rules` in the project root. Deploy them:
+See [firestore.rules](./firestore.rules) and [storage.rules](./storage.rules) in the project root. Firestore rules are identical to the POS [firebase/firestore.rules](../masoub-alqarya-pos/firebase/firestore.rules); keep them synchronized. Active admins and branch-assigned active cashiers can update order status metadata, while order contents, receipt numbers and POS operations remain server-managed. Both applications share one deployed ruleset.
 
-```bash
-firebase deploy --only firestore:rules,storage
+For a rules-only rollout from the POS repository (no function build):
+
+```sh
+npx firebase-tools@14.27.0 deploy --project masoub-alqarya --config firebase.live.json --only firestore:rules
 ```
+
+Deploy the customer order callable and release updated mobile/web clients before cutting over the server-only order-creation policy. Storage rules are separate and are unaffected by this command.
 
 ---
 
@@ -334,3 +345,11 @@ All monetary values are in **Saudi Riyal (SAR / ر.س)**. Use `formatSAR()` from
 ## License
 
 Private — Masoub AlQarya.
+
+## Order notes and daily receipt numbers
+
+Checkout supports optional notes (up to 500 characters), visible to staff and on receipts/kitchen tickets. New order numbers are assigned by the shared Firebase callable, starting at **1 per branch each Saudi calendar day**. Mobile and web share the sequence; retries and reprints keep the original number. This requires deployment of `submitCustomerOrder` and a coordinated customer-client/rules rollout; source changes alone do not activate it.
+
+## Stock, featured catalog, and POS release
+
+Manage shared stock in Admin Menu (or POS Settings as an admin). Featured items and their rank are configured in Admin Menu and shown first in customer menus. Unavailable items/offers cannot be checked out; the server validates stock again. The mobile app requires explicit sizes, including offer constituents. POS paid orders require verified payment records; cash orders wait for a cashier to start preparation. Category routing supports several printers, including the first receipt printer, with one full receipt and routed kitchen copies. Updated client/backend rollout is required; no builds/deployments are run automatically.

@@ -55,7 +55,8 @@ function parseServiceAccount(raw, source) {
       `[firebase-admin] Failed to parse ${source}:`,
       error?.name || error,
     );
-    throw new Error(
+    throw adminError(
+      "admin/invalid-credential",
       `Firebase Admin credentials invalid (${source}). Set FIREBASE_SERVICE_ACCOUNT_BASE64 to the base64 of the service-account JSON.`,
     );
   }
@@ -90,7 +91,8 @@ export function getCredential() {
 function requireCredential() {
   const credential = getCredential();
   if (!credential) {
-    throw new Error(
+    throw adminError(
+      "admin/missing-credential",
       "Firebase Admin credentials missing. Set FIREBASE_SERVICE_ACCOUNT_BASE64 (preferred on Vercel), FIREBASE_SERVICE_ACCOUNT (JSON), or FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY.",
     );
   }
@@ -178,8 +180,17 @@ async function verifyIdToken(idToken, credential) {
     throw adminError("auth/argument-error", "Invalid ID token");
   }
 
-  const header = decodeJwtPart(parts[0]);
-  const payload = decodeJwtPart(parts[1]);
+  let header;
+  let payload;
+  try {
+    header = decodeJwtPart(parts[0]);
+    payload = decodeJwtPart(parts[1]);
+    if (!header || !payload || typeof header !== "object" || typeof payload !== "object") {
+      throw new Error("Invalid JWT data");
+    }
+  } catch {
+    throw adminError("auth/argument-error", "Invalid ID token");
+  }
   const now = Math.floor(Date.now() / 1000);
 
   if (payload.exp && payload.exp < now) {

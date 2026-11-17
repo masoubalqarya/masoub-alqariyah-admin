@@ -1,11 +1,30 @@
 const ar = {
-    // Validation Errors
-    errorNameEnRequired: "الاسم الإنجليزي مطلوب",
-    errorNameArRequired: "الاسم العربي مطلوب",
-    errorCategoryRequired: "التصنيف مطلوب",
-    errorPriceRequired: "يجب أن يكون السعر أكبر من 0",
-    errorImageRequired: "الصورة مطلوبة",
-    
+  // Fulfillment
+  inStock: "متوفر للطلب",
+  outOfStock: "غير متوفر حالياً",
+  featured: "صنف مميز — يظهر أولاً",
+  featuredRank: "ترتيب الأصناف المميزة (الأقل أولاً)",
+  stockUpdateFailed: "تعذر تحديث توفر الصنف؛ حاول مرة أخرى",
+  fulfillmentMethod: "طريقة الاستلام",
+  driveThrough: "التوصيل إلى السيارة",
+  pickup: "استلام من الفرع",
+  driveThroughDescription: "توصيل الطلب إلى سيارة العميل.",
+  pickupDescription: "يستلم العميل طلبه من داخل الفرع باستخدام رقم الطلب.",
+  pickupInstructions: "الاستلام من كاونتر الفرع برقم الطلب.",
+  readyForPickup: "جاهز للاستلام",
+  collected: "تم الاستلام",
+  pickupCollectedMessage: "تم استلام الطلب.",
+  pickupChange: "تسليم المبلغ المتبقي للعميل عند الاستلام.",
+  markReadyForPickup: "تحديد الطلب كجاهز للاستلام",
+  markCollected: "تأكيد استلام الطلب",
+  orderNotes: "ملاحظات الطلب",
+  // Validation Errors
+  errorNameEnRequired: "الاسم الإنجليزي مطلوب",
+  errorNameArRequired: "الاسم العربي مطلوب",
+  errorCategoryRequired: "التصنيف مطلوب",
+  errorPriceRequired: "يجب أن يكون السعر أكبر من 0",
+  errorImageRequired: "الصورة مطلوبة",
+
   // General
   appName: "معصوب القرية - لوحة الإدارة",
   save: "حفظ",
@@ -73,7 +92,7 @@ const ar = {
   cash: "نقداً",
   card: "بطاقة",
   cashAmount: "المبلغ النقدي",
-  changeAmount: "الباقي",
+  changeAmount: "الصرف",
   confirmCancel: "هل أنت متأكد من إلغاء هذا الطلب؟",
 
   // Menu
@@ -125,11 +144,11 @@ const ar = {
   confirmDeleteAllergy: "هل أنت متأكد من حذف مسبّب الحساسية هذا؟",
   noIngredients: "لا توجد مكونات مدرجة.",
   noAllergies: "لا توجد حساسية مدرجة.",
-  noAllergiesOptions: "لا توجد مسببات حساسية بعد. أضفها من تبويب مسببات الحساسية أولاً.",
+  noAllergiesOptions:
+    "لا توجد مسببات حساسية بعد. أضفها من تبويب مسببات الحساسية أولاً.",
   baseAllergies: "الحساسية الأساسية",
   triggeredAllergies: "الحساسية المرتبطة",
-  extraAllergiesHint:
-    "تظهر هذه الحساسية في الصنف فقط بعد اختيار هذه الإضافة.",
+  extraAllergiesHint: "تظهر هذه الحساسية في الصنف فقط بعد اختيار هذه الإضافة.",
   errorCaloriesRequired: "السعرات الحرارية الأساسية مطلوبة",
   errorSizeCaloriesRequired: "السعرات الحرارية مطلوبة لكل حجم محدد",
 
@@ -214,9 +233,11 @@ const ar = {
   noEmployees: "لم تتم إضافة موظفين بعد.",
   confirmDeleteEmployee: "هل أنت متأكد من حذف هذا الموظف؟",
   uploadDemoAttendance: "رفع بيانات حضور تجريبية",
-  demoUploadDescription: "ينشئ وردية ليلية تجريبية وموظفين بأرقام جهاز من 2 إلى 10 وبصمات تجريبية لشهري أغسطس وسبتمبر والشهر الحالي حتى اليوم. لا يتم استبدال الموظفين أو السجلات الموجودة. تبقى البيانات حتى تُحذف يدويًا.",
+  demoUploadDescription:
+    "ينشئ وردية ليلية تجريبية وموظفين بأرقام جهاز من 2 إلى 10 وبصمات تجريبية لشهري أغسطس وسبتمبر والشهر الحالي حتى اليوم. لا يتم استبدال الموظفين أو السجلات الموجودة. تبقى البيانات حتى تُحذف يدويًا.",
   demoMorningShift: "الوردية الصباحية للموظفين التجريبيين",
-  demoMorningShiftRequired: "أنشئ وردية صباحية نشطة تبدأ بعد الفجر في إعدادات الحضور قبل رفع البيانات التجريبية.",
+  demoMorningShiftRequired:
+    "أنشئ وردية صباحية نشطة تبدأ بعد الفجر في إعدادات الحضور قبل رفع البيانات التجريبية.",
   demoUploadComplete: "اكتمل رفع البيانات التجريبية",
   demoUploadFailed: "توقف رفع البيانات التجريبية. يمكنك إعادة المحاولة بأمان",
   demoEventsCreated: "سجل جديد",
@@ -238,6 +259,10 @@ const ar = {
   lastPunch: "آخر بصمة",
   numberOfPunches: "عدد البصمات",
   attendanceLoadError: "تعذر تحميل بيانات الحضور.",
+  attendanceAuthRequired: "تعذر التحقق من جلستك. سجّل الخروج ثم سجّل الدخول مجددًا.",
+  attendanceAccessDenied: "يتطلب عرض الحضور حساب مسؤول نشطًا.",
+  attendanceServerConfiguration: "بيانات اعتماد خادم الحضور مفقودة أو غير صالحة. يجب إعداد حساب خدمة Firebase على الخادم وإعادة تشغيله.",
+  attendanceServerUnavailable: "تعذر على خادم الحضور التحقق من الصلاحيات. أعد المحاولة، وإذا استمرت المشكلة فتحقق من سجلات الخادم.",
   tryAgain: "إعادة المحاولة",
   noActiveEmployees: "لا يوجد موظفون نشطون.",
   rawStatus: "الحالة الخام",
@@ -254,7 +279,15 @@ const ar = {
   weeklyOffDays: "أيام الإجازة الأسبوعية",
   weeklyOffDaysHint: "تُحتسب الأيام غير المحددة أيام عمل في التقرير الشهري.",
   dayOff: "يوم إجازة",
-  weekdayNames: ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],
+  weekdayNames: [
+    "الأحد",
+    "الاثنين",
+    "الثلاثاء",
+    "الأربعاء",
+    "الخميس",
+    "الجمعة",
+    "السبت",
+  ],
   monthlyReport: "التقرير الشهري",
   reportStartDate: "بداية التقرير",
   reportEndDate: "نهاية التقرير",
@@ -313,8 +346,10 @@ const ar = {
   prayerCity: "مدينة الصلاة",
   prayerCountry: "دولة الصلاة",
   prayerMethod: "طريقة الحساب",
-  deductionPolicyExplanation: "عند بلوغ حد التأخير، تصبح جميع دقائق التأخير قابلة للخصم. لا يُحسب مبلغ مالي.",
-  invalidShiftConfiguration: "أدخل اسمي الوردية ووقت انتهاء وتعديلات وفترة سماح صحيحة.",
+  deductionPolicyExplanation:
+    "عند بلوغ حد التأخير، تصبح جميع دقائق التأخير قابلة للخصم. لا يُحسب مبلغ مالي.",
+  invalidShiftConfiguration:
+    "أدخل اسمي الوردية ووقت انتهاء وتعديلات وفترة سماح صحيحة.",
   invalidAttendancePolicy: "أدخل حداً وموقعاً وطريقة حساب صحيحة.",
   shiftNameEn: "اسم الوردية بالإنجليزية",
   shiftNameAr: "اسم الوردية بالعربية",
@@ -323,16 +358,6 @@ const ar = {
   gracePeriod: "فترة السماح",
   gracePeriodMinutes: "فترة السماح (دقائق)",
   endNextDay: "تنتهي في اليوم التالي",
-
-  // POS
-  posTitle: "نقطة البيع",
-  newOrders: "طلبات جديدة",
-  activeOrders: "طلبات نشطة",
-  completedOrders: "مكتملة",
-  noOrders: "لا توجد طلبات في هذا العمود",
-  orderReceived: "تم استلام طلب جديد!",
-  todayOrders: "طلبات اليوم",
-  todayRevenue: "إيرادات اليوم",
 
   // Attendance shift time
   endTime: "وقت النهاية",

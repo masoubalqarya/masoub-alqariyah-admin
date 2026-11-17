@@ -33,6 +33,9 @@
  * @property {CookingOption[]} cookingOptions
  * @property {string[]} [availableExtras]   - ids from extrasOptions
  * @property {string[]} [availableSizes]    - ids from sizeOptions
+ * @property {boolean} [inStock] Missing means available; false prevents new customer orders.
+ * @property {boolean} [isFeatured] Featured items sort before regular items.
+ * @property {number} [featuredRank] Featured ordering, lowest first; default 0.
  * @property {Object.<string,number>} [sizeCalories] - kcal per sizeOption id
  * @property {Object.<string,number>} [sizePriceAdd] - extra SAR per size (overrides SizeOption.priceAdd)
  * @property {number} calories              - base kcal (required)
@@ -119,6 +122,9 @@
  * @typedef {Object} Order
  * @property {string} id
  * @property {string} orderNumber
+ * @property {string} [orderDate] Server-assigned YYYY-MM-DD in Asia/Riyadh; orderNumber starts at 1 per branch/day.
+ * @property {string} [notes] Optional trimmed customer notes, max 500 characters.
+ * @property {'driveThrough' | 'pickup'} [fulfillmentType] Missing means driveThrough; pickup has empty vehicle fields. For pickup, onTheWay means ready and delivered means collected.
  * @property {string} plateNumber
  * @property {string} carModel
  * @property {string} carColor

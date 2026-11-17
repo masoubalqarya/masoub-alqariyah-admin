@@ -14,30 +14,18 @@ export default function AppShell({ children }) {
   const router = useRouter();
 
   const isLoginPage = pathname === "/login";
-  const isPOSPage = pathname === "/pos";
   const role = userProfile?.role;
 
-  // Redirect based on auth + role
+  // Redirect based on authentication
   useEffect(() => {
     if (loading) return;
 
     if (isLoginPage && user) {
-      // Redirect to appropriate page based on role
-      if (role === "cashier") {
-        router.replace("/pos");
-      } else {
-        router.replace("/");
-      }
+      router.replace("/");
     } else if (!isLoginPage && !user) {
       router.replace("/login");
-    } else if (user && role === "cashier" && !isPOSPage && !isLoginPage) {
-      // Cashiers can only access POS
-      router.replace("/pos");
-    } else if (user && role === "admin" && isPOSPage) {
-      // Admins are redirected away from POS to dashboard
-      router.replace("/");
     }
-  }, [loading, user, role, isLoginPage, isPOSPage, router]);
+  }, [loading, user, isLoginPage, router]);
 
   // Show loading spinner during auth check
   if (loading) {
@@ -52,7 +40,8 @@ export default function AppShell({ children }) {
 
   // Login page - no sidebar
   if (isLoginPage) {
-    if (user) return null; // redirecting via useEffect
+    if (user) return null;
+
     return (
       <div dir={dir} className="min-h-screen bg-background">
         {children}
@@ -60,13 +49,13 @@ export default function AppShell({ children }) {
     );
   }
 
-  // Protected routes - show nothing while redirecting
+  // Protected routes
   if (!user) {
     return null;
   }
 
-  // Block "user" role entirely
-  if (role === "user") {
+  // Block users without dashboard access
+  if (role !== "admin") {
     return (
       <div
         dir={dir}
@@ -80,12 +69,7 @@ export default function AppShell({ children }) {
     );
   }
 
-  // POS view for cashiers — full-screen, no sidebar
-  if (isPOSPage && role === "cashier") {
-    return children;
-  }
-
-  // Admin view — sidebar + content
+  // Dashboard layout - sidebar + content
   return (
     <div dir={dir} className="min-h-screen bg-muted/30">
       <Sidebar />

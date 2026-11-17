@@ -14,17 +14,25 @@ const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 async function authorize(request) {
   const header = request.headers.get("authorization") || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
-  if (!token) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  if (!token) return { error: NextResponse.json({ error: "Unauthorized", code: "attendanceAuthRequired" }, { status: 401 }) };
   try {
     const decoded = await getAdminAuth().verifyIdToken(token);
     const profile = await getAdminDb().collection("users").doc(decoded.uid).get();
-    if (!profile.exists || profile.data().role !== "admin" || profile.data().isActive === false) {
-      return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
+    if (!profile.exists || profile.data().role !== "admin" || profile.data().isActive !== true) {
+      return { error: NextResponse.json({ error: "Forbidden", code: "attendanceAccessDenied" }, { status: 403 }) };
     }
     return { uid: decoded.uid };
   } catch (error) {
-    console.error("[prayer-times] authorization failed:", error);
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+    console.error("[prayer-times] authorization failed:", error?.code, error?.message);
+    if (error?.code?.startsWith("auth/")) {
+      return { error: NextResponse.json({ error: "Unauthorized", code: "attendanceAuthRequired" }, { status: 401 }) };
+    }
+    const configurationError = error?.code === "admin/missing-credential" ||
+      error?.code === "admin/invalid-credential";
+    return { error: NextResponse.json({
+      error: configurationError ? "Attendance server credentials are not configured correctly" : "Attendance authorization service unavailable",
+      code: configurationError ? "attendanceServerConfiguration" : "attendanceServerUnavailable",
+    }, { status: 503 }) };
   }
 }
 
