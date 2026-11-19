@@ -69,9 +69,10 @@ function shiftPayload(data) {
   return {
     nameEn: data.nameEn.trim(),
     nameAr: data.nameAr.trim(),
-    startType: "prayer",
+    startType: data.startType === "fixed" ? "fixed" : "prayer",
+    startTime: data.startTime || "06:00",
     startPrayer: data.startPrayer,
-    startOffsetMinutes: Number(data.startOffsetMinutes),
+    startOffsetMinutes: data.startType === "fixed" ? 0 : Number(data.startOffsetMinutes),
     endType: "fixed",
     endTime: data.endTime,
     endNextDay: Boolean(data.endNextDay),

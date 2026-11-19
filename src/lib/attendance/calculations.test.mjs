@@ -26,6 +26,15 @@ const employee = { id: "ahmed", isActive: true, zkUserId: "1", startOffsetMinute
 const prayers = { fajr: "05:00", maghrib: "18:15" };
 const punch = (time) => ({ zkUserId: "1", eventTimeRaw: time });
 
+test("manual shifts calculate without prayer data and retain employee offsets and grace", () => {
+  const manual = { ...morning, startType: "fixed", startTime: "08:00" };
+  const day = calculateDailyAttendance({ employee: { ...employee, startOffsetMinutes: 5 }, shift: manual, shiftDate: "2026-10-21", events: [punch("2026-10-21 08:20:00")] });
+  assert.equal(timeLabel(day.expectedStart), "08:05");
+  assert.equal(day.lateMinutes, 5);
+  const shiftedPrayers = calculateDailyAttendance({ employee: { ...employee, startOffsetMinutes: 5 }, shift: manual, shiftDate: "2026-10-21", prayers: { fajr: "04:00", maghrib: "17:00" }, events: [punch("2026-10-21 08:20:00")] });
+  assert.equal(shiftedPrayers.expectedStart.getTime(), day.expectedStart.getTime());
+});
+
 test("morning arrival inside grace has no lateness", () => {
   const day = calculateDailyAttendance({
     employee, shift: morning, shiftDate: "2026-10-21", prayers,
@@ -117,10 +126,11 @@ const evening = {
   endTime: "02:00", endNextDay: true, graceMinutes: 10,
 };
 
-test("report defaults to the latest completed 28th–27th period", () => {
-  assert.deepEqual(defaultReportPeriod("2026-10-21"), { start: "2026-08-28", end: "2026-09-27" });
-  assert.deepEqual(defaultReportPeriod("2026-10-28"), { start: "2026-09-28", end: "2026-10-27" });
-  assert.deepEqual(defaultReportPeriod("2027-01-05"), { start: "2026-11-28", end: "2026-12-27" });
+test("report defaults to today and one calendar month earlier, clamped to month end", () => {
+  assert.deepEqual(defaultReportPeriod("2026-10-21"), { start: "2026-09-21", end: "2026-10-21" });
+  assert.deepEqual(defaultReportPeriod("2026-03-31"), { start: "2026-02-28", end: "2026-03-31" });
+  assert.deepEqual(defaultReportPeriod("2024-03-31"), { start: "2024-02-29", end: "2024-03-31" });
+  assert.deepEqual(defaultReportPeriod("2027-01-05"), { start: "2026-12-05", end: "2027-01-05" });
 });
 
 test("custom date range includes both endpoints and rejects invalid ranges", () => {

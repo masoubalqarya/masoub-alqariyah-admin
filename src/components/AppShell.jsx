@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/lib/i18n";
+import AdminWalkthrough from "@/components/AdminWalkthrough";
 import Sidebar from "@/components/Sidebar";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2, ShieldX } from "lucide-react";
@@ -73,6 +74,7 @@ export default function AppShell({ children }) {
   return (
     <div dir={dir} className="min-h-screen bg-muted/30">
       <Sidebar />
+      <AdminWalkthrough key={user.uid} userId={user.uid} />
       <main className="ms-64 min-h-screen">
         <div className="p-6">{children}</div>
       </main>

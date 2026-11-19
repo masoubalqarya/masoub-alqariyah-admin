@@ -85,7 +85,7 @@ Attendance demo seeding lives in `src/lib/attendance/uploadDemoSeed.js`, `src/li
 
 Rules: root `firestore.rules`, `storage.rules`. Storage: `menuItems/`, `offers/`, `restaurants/`.
 
-Keep [firestore.rules](../firestore.rules) identical to the POS [firebase/firestore.rules](../../masoub-alqarya-pos/firebase/firestore.rules). Active admins and branch-assigned active cashiers retain direct updates to supported `status`, `updatedAt`, and `statusHistory` only. Customer order creation/counters and POS operational writes are server-only; POS reads remain branch-scoped. Both POS configurations use this policy; there is no separate compatibility ruleset.
+Keep [firestore.rules](../firestore.rules) identical to the POS [firebase/firestore.rules](../../masoub-alqarya-pos/firebase/firestore.rules). Direct client order updates are denied; authorized staff use authenticated callables for status, edits and cancellations. Customer order creation/counters and POS operational writes are server-only; POS reads remain branch-scoped. Both POS configurations use this policy; there is no separate compatibility ruleset.
 
 ## ZKTeco attendance
 
@@ -95,7 +95,7 @@ Keep [firestore.rules](../firestore.rules) identical to the POS [firebase/firest
 - `attendanceEvents` use deterministic hash IDs and create-only writes; never update a stored raw event.
 - `getrequest` updates `attendanceDevices.lastSeenAt` only when the heartbeat is at least five minutes stale.
 - The attendance roster is `employees`, not staff login `users`. `shiftIds` holds up to two required templates, one Fajr and one Maghrib; old `shiftId` remains readable as a single assignment and for legacy corrections.
-- Attendance shift windows, Riyadh time, and Option B deduction minutes are calculated on demand by `src/lib/attendance/calculations.js`; the report defaults to the most recently completed 28th–27th period but accepts an inclusive custom 1–366-day range. It counts only completed working shifts, sums late minutes across both, and flags overlapping punch windows rather than double-counting. Inactive templates still calculate for already-assigned employees. Weekly off-days are per employee; an empty array means every day is a working day. No monetary deduction is computed.
+- Attendance shift windows, Riyadh time, and Option B deduction minutes are calculated on demand by `src/lib/attendance/calculations.js`; the report defaults to the range from one calendar month earlier through today but accepts an inclusive custom 1–366-day range. It counts only completed working shifts, sums late minutes across both, and flags overlapping punch windows rather than double-counting. Inactive templates still calculate for already-assigned employees. Weekly off-days are per employee; an empty array means every day is a working day. No monetary deduction is computed.
 - `/api/attendance/prayer-times` verifies admin identity with the existing server helper, fetches AlAdhan monthly calendars (default Jeddah/method 4), caches date docs, and preserves manual overrides. Do not expose service credentials or require client auth on `/iclock`.
 - Prayer API authorization requires an active admin profile and server service-account credentials. Missing/invalid tokens return 401, denied roles return 403, and credential/service failures return 503. Attendance prayer requests wait for Auth initialization and refresh the token once on 401; translated errors distinguish session and server setup problems. Firestore rule changes do not configure server credentials.
 
@@ -163,3 +163,11 @@ The pure offer-pricing helper is mirrored in admin/mobile/web and checked agains
 See [AGENTS.md](../AGENTS.md#admin-content-and-catalog-presentation) for fields, caching, security paths and rollout details.
 
 Menu ? Arrange menu provides drag handles and up/down controls for category, per-category product, and app featured-section ordering. Save order commits the numbered list. Image editors also accept file drops. Feature a product in its edit form, then arrange it under Featured section. Normal category positions are independent of featured placement. Focused check: `node src/lib/catalog-order.test.mjs`.
+
+## Cash orders and operational updates
+
+Customer checkout is cash-only; online payment is informational. Customers/branch cashiers can edit quantities, notes and car details or cancel during the first 60 seconds before preparation. Active admins can correct/cancel later with a reason and immutable before/after history. The shared callables enforce ownership, branch, timing, revisions and print fences; direct client order updates are denied by the synchronized rules. Prepared-order edits require staff review and an explicit audited reprint.
+
+Attendance supports manual shift starts while keeping prayer references. Monthly dates default to today and one calendar month earlier; employee/date filters apply equally to the table and XLSX export. Exports contain summaries, calculated attendance, raw punches, delays and deduction minutes; no monetary rate is invented. A skippable walkthrough is replayable from the sidebar.
+
+Source changes do not deploy services or rules. Review the shared callable/rules/client rollout together when authorized. No builds, deployments, live changes or hardware acceptance were performed. See AGENTS.md for the contract and device limits.

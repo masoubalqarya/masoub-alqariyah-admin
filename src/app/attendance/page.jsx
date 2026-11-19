@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { downloadAttendanceReport } from "@/lib/attendance/export";
 import AttendanceSettings from "@/components/attendance/AttendanceSettings";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -191,6 +192,9 @@ export default function AttendancePage() {
   const [dateKey, setDateKey] = useState(() => getRiyadhDateKey());
   const [reportRange, setReportRange] = useState(() => defaultReportPeriod());
   const [selectedId, setSelectedId] = useState(null);
+  const [reportEmployeeIds, setReportEmployeeIds] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
   const [prayerDialog, setPrayerDialog] = useState(false);
   const [prayerForm, setPrayerForm] = useState({
     fajr: "",
@@ -245,15 +249,16 @@ export default function AttendancePage() {
   );
   const attendance = useAttendanceEvents(startDate, endDate, dataEnabled);
   const adjustments = useAttendanceOverrides(startDate, endDate, dataEnabled);
+  const requiresPrayerTimes = employees.filter((employee) => employee.isActive).some((employee) => getAssignedShiftIds(employee).some((id) => shifts.find((shift) => shift.id === id)?.startType !== "fixed"));
   const loading =
     employeesLoading ||
     configLoading ||
     (dataEnabled &&
-      (prayers.loading || attendance.loading || adjustments.loading));
+      ((requiresPrayerTimes && prayers.loading) || attendance.loading || adjustments.loading));
   const error =
     employeesError ||
     configError ||
-    (dataEnabled && (prayers.error || attendance.error || adjustments.error));
+    (dataEnabled && ((requiresPrayerTimes && prayers.error) || attendance.error || adjustments.error));
   const activeEmployees = useMemo(
     () => employees.filter((employee) => employee.isActive),
     [employees],
@@ -361,9 +366,10 @@ export default function AttendancePage() {
     ],
   );
 
+  const reportEmployees = useMemo(() => activeEmployees.filter((employee) => reportEmployeeIds === null || reportEmployeeIds.includes(employee.id)), [activeEmployees, reportEmployeeIds]);
   const monthlyRows = useMemo(
     () =>
-      activeEmployees.map((employee) => {
+      reportEmployees.map((employee) => {
         const ids = getAssignedShiftIds(employee);
         const employeeShifts = ids
           .map((id) => shiftById.get(id))
@@ -405,7 +411,7 @@ export default function AttendancePage() {
         };
       }),
     [
-      activeEmployees,
+      reportEmployees,
       reportDates,
       rangeValid,
       shiftById,
@@ -761,6 +767,22 @@ export default function AttendancePage() {
           />
         </TabsContent>
         <TabsContent value="monthly" className="space-y-5">
+          <details className="rounded-lg border p-3">
+            <summary className="cursor-pointer font-medium">{t.reportEmployees} ({reportEmployees.length})</summary>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Button variant="outline" size="sm" onClick={() => setReportEmployeeIds(null)}>{t.selectAllEmployees}</Button>
+              <Button variant="outline" size="sm" onClick={() => setReportEmployeeIds([])}>{t.clearEmployees}</Button>
+              {activeEmployees.map((employee) => <label key={employee.id} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={reportEmployeeIds === null || reportEmployeeIds.includes(employee.id)} onChange={(event) => setReportEmployeeIds(event.target.checked ? [...(reportEmployeeIds || activeEmployees.map((entry) => entry.id)), employee.id].filter((id, index, all) => all.indexOf(id) === index) : (reportEmployeeIds || activeEmployees.map((entry) => entry.id)).filter((id) => id !== employee.id))} />{employee.displayName}</label>)}
+            </div>
+          </details>
+          <Button disabled={exporting || loading || !!error || !rangeValid || !monthlyRows.length} onClick={async () => {
+            setExporting(true); setExportError("");
+            try { await downloadAttendanceReport({ rows: monthlyRows, events: attendance.events, range: { ...reportRange }, locale, t }); }
+            catch { setExportError(t.exportFailed); }
+            finally { setExporting(false); }
+          }}>{exporting ? t.loading : t.exportXlsx}</Button>
+          {exportError && <p role="alert" className="text-destructive">{exportError}</p>}
+
           <div className="flex flex-wrap items-end gap-3">
             <div>
               <Label>{t.reportStartDate}</Label>
@@ -809,7 +831,7 @@ export default function AttendancePage() {
               rows={monthlyTableRows}
               loading={loading}
               error={error}
-              empty={t.noActiveEmployees}
+              empty={reportEmployees.length ? t.noActiveEmployees : t.noEmployeesSelected}
               onSelect={(row) => setSelectedId(row.employee.id)}
             />
           )}

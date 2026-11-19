@@ -19,6 +19,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { replayAdminWalkthrough } from "@/components/AdminWalkthrough";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
@@ -86,6 +87,7 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="px-3 py-4 border-t border-border space-y-2">
+        <Button variant="ghost" size="sm" className="w-full justify-start" onClick={replayAdminWalkthrough}>{t.replayWalkthrough}</Button>
         {/* Language toggle */}
         <Button
           variant="ghost"

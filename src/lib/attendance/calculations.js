@@ -37,11 +37,8 @@ function monthDateKey(year, month, day) {
 
 export function defaultReportPeriod(today = dateKeyInRiyadh()) {
   const [year, month, day] = today.split("-").map(Number);
-  const endMonthOffset = day >= 28 ? 0 : -1;
-  return {
-    start: monthDateKey(year, month + endMonthOffset - 1, 28),
-    end: monthDateKey(year, month + endMonthOffset, 27),
-  };
+  const lastDayOfPreviousMonth = new Date(Date.UTC(year, month - 1, 0)).getUTCDate();
+  return { start: monthDateKey(year, month - 1, Math.min(day, lastDayOfPreviousMonth)), end: today };
 }
 
 export function dateKeysInRange(start, end, maxDays = 366) {
@@ -111,15 +108,15 @@ export function isWorkingDay(employee, dateKey) {
 }
 
 export function calculateShiftWindow(shiftDate, shift, employee, prayers) {
-  if (!shift || !prayers || !employee) return null;
-  const prayer = shift.startPrayer === "Fajr" ? prayers.fajr : prayers.maghrib;
-  const baseStart = riyadhDateTime(shiftDate, prayer);
+  if (!shift || !employee || (shift.startType !== "fixed" && !prayers)) return null;
+  const startTime = shift.startType === "fixed" ? shift.startTime : shift.startPrayer === "Fajr" ? prayers.fajr : prayers.maghrib;
+  const baseStart = riyadhDateTime(shiftDate, startTime);
   const endDate = shift.endNextDay ? addDays(shiftDate, 1) : shiftDate;
   const baseEnd = riyadhDateTime(endDate, shift.endTime);
   if (!baseStart || !baseEnd) return null;
 
   const startOffset =
-    Number(shift.startOffsetMinutes || 0) +
+    (shift.startType === "fixed" ? 0 : Number(shift.startOffsetMinutes || 0)) +
     Number(employee.startOffsetMinutes || 0);
   const endOffset = Number(employee.endOffsetMinutes || 0);
   const graceMinutes = Number(shift.graceMinutes || 0);
@@ -233,7 +230,7 @@ export function calculateEmployeeShiftDays({
   if (windows.some((item) => !item.window)) return [];
   const neighbors = [-1, 1].flatMap((offset) => {
     const date = addDays(shiftDate, offset);
-    return neighborPrayers[date] && isWorkingDay(employee, date)
+    return isWorkingDay(employee, date)
       ? shifts
           .map((shift) =>
             calculateShiftWindow(date, shift, employee, neighborPrayers[date]),

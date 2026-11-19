@@ -13,7 +13,7 @@ import { saveAttendanceSettings, saveShiftTemplate } from "@/hooks/useAttendance
 import { useI18n } from "@/lib/i18n";
 
 const newShift = {
-  nameEn: "", nameAr: "", startPrayer: "Fajr",
+  nameEn: "", nameAr: "", startPrayer: "Fajr", startType: "fixed", startTime: "06:00",
   startOffsetMinutes: 20, endTime: "12:00", endNextDay: false,
   graceMinutes: 10, active: true,
 };
@@ -30,15 +30,15 @@ export default function AttendanceSettings({ shifts, settings }) {
 
   const openShift = (shift = null) => {
     setEditing(shift?.id || "new");
-    setShiftForm(shift ? { ...shift } : { ...newShift });
+    setShiftForm(shift ? { ...newShift, ...shift, startType: shift.startType || "prayer" } : { ...newShift });
     setError("");
   };
 
   const saveShift = async () => {
-    if (!shiftForm.nameEn.trim() || !shiftForm.nameAr.trim() ||
+    if ((shiftForm.startType === "fixed" && !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftForm.startTime)) || !shiftForm.nameEn.trim() || !shiftForm.nameAr.trim() ||
       !/^([01]\d|2[0-3]):[0-5]\d$/.test(shiftForm.endTime) ||
-      !Number.isInteger(Number(shiftForm.startOffsetMinutes)) ||
-      Math.abs(Number(shiftForm.startOffsetMinutes)) > 1440 ||
+      (shiftForm.startType !== "fixed" && (!Number.isInteger(Number(shiftForm.startOffsetMinutes)) || Math.abs(Number(shiftForm.startOffsetMinutes)) > 1440)) ||
+      (shiftForm.startType === "fixed" && !shiftForm.endNextDay && shiftForm.endTime <= shiftForm.startTime) ||
       !Number.isInteger(Number(shiftForm.graceMinutes)) ||
       Number(shiftForm.graceMinutes) < 0 || Number(shiftForm.graceMinutes) > 1440) {
       setError(t.invalidShiftConfiguration);
@@ -91,7 +91,7 @@ export default function AttendanceSettings({ shifts, settings }) {
               <div>
                 <p className="font-semibold">{locale === "ar" ? shift.nameAr : shift.nameEn}</p>
                 <p className="text-sm text-muted-foreground">
-                  {t.starts}: {t[shift.startPrayer?.toLowerCase()]} + {shift.startOffsetMinutes} {t.minutes}
+                  {t.starts}: {shift.startType === "fixed" ? shift.startTime : `${t[shift.startPrayer?.toLowerCase()]} + ${shift.startOffsetMinutes} ${t.minutes}`}
                   {" · "}{t.gracePeriod}: {shift.graceMinutes} {t.minutes}
                   {" · "}{t.ends}: {shift.endTime} {shift.endNextDay ? `(${t.nextDay})` : ""}
                 </p>
@@ -149,7 +149,14 @@ export default function AttendanceSettings({ shifts, settings }) {
             <div><Label>{t.shiftNameAr}</Label><Input value={shiftForm.nameAr}
               onChange={(event) => setShiftForm({ ...shiftForm, nameAr: event.target.value })} /></div>
             <div>
-              <Label>{t.startPrayer}</Label>
+              <Label>{t.shiftStartMode}</Label>
+              <Select value={shiftForm.startType} onValueChange={(startType) => setShiftForm({ ...shiftForm, startType })}>
+                <SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="fixed">{t.manualStart}</SelectItem><SelectItem value="prayer">{t.prayerStart}</SelectItem></SelectContent>
+              </Select>
+            </div>
+            {shiftForm.startType === "fixed" && <div><Label>{t.manualStartTime}</Label><Input type="time" dir="ltr" value={shiftForm.startTime} onChange={(event) => setShiftForm({ ...shiftForm, startTime: event.target.value })} /></div>}
+            <div>
+              <Label>{shiftForm.startType === "fixed" ? t.referencePrayer : t.startPrayer}</Label>
               <Select value={shiftForm.startPrayer}
                 onValueChange={(value) => setShiftForm({ ...shiftForm, startPrayer: value })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -159,8 +166,8 @@ export default function AttendanceSettings({ shifts, settings }) {
                 </SelectContent>
               </Select>
             </div>
-            <div><Label>{t.minutesAfterPrayer}</Label><Input type="number" value={shiftForm.startOffsetMinutes}
-              onChange={(event) => setShiftForm({ ...shiftForm, startOffsetMinutes: event.target.value })} /></div>
+            {shiftForm.startType !== "fixed" && <div><Label>{t.minutesAfterPrayer}</Label><Input type="number" value={shiftForm.startOffsetMinutes}
+              onChange={(event) => setShiftForm({ ...shiftForm, startOffsetMinutes: event.target.value })} /></div>}
             <div><Label>{t.endTime}</Label><Input type="time" dir="ltr" value={shiftForm.endTime}
               onChange={(event) => setShiftForm({ ...shiftForm, endTime: event.target.value })} /></div>
             <div><Label>{t.gracePeriodMinutes}</Label><Input type="number" min="0" value={shiftForm.graceMinutes}

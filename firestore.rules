@@ -148,13 +148,12 @@ service cloud.firestore {
         (isAuthenticated() && resource.data.userId == request.auth.uid);
       // submitCustomerOrder atomically allocates the daily number and creates the order.
       allow create: if false;
-      // The admin portal still writes status metadata directly. Keep order
-      // contents, customer identity and daily receipt numbers server-managed.
-      allow update: if (isAdmin() ||
-        (isCashier() && resource.data.restaurantId == getCashierRestaurant())) &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['status', 'updatedAt', 'statusHistory']) &&
-        request.resource.data.status in ['pending', 'preparing', 'onTheWay', 'delivered', 'cancelled'];
+      // Status, cancellation and edits use authenticated, audited callables.
+      allow update: if false;
+      match /changeHistory/{changeId} {
+        allow read: if isAdmin() || (isCashier() && resource.data.restaurantId == getCashierRestaurant());
+        allow write: if false;
+      }
       allow delete: if isAdmin();
       match /posStatusHistory/{entryId} {
         allow read: if isAdmin() || (isCashier() && resource.data.restaurantId == getCashierRestaurant());

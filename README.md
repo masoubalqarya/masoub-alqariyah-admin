@@ -229,7 +229,7 @@ src/
   plateNumber: string,
   carModel: string,
   carColor: string,
-  paymentMethod: "card" | "cash",
+  paymentMethod: "cash",
   cashAmount?: number,
   changeAmount?: number,
   items: OrderItem[],
@@ -276,7 +276,7 @@ In Attendance Settings, create shift templates with Fajr or Maghrib start, confi
 
 The daily view uses Asia/Riyadh `shiftDate`, not just punch calendar dates. It groups an employee's shift rows under one name, while each shift row opens its own raw punches and correction details. A night shift ending at 02:00 owns its after-midnight punches. One raw punch shows no last punch. A 90-minute buffer around each expected start/end collects punches; overlapping windows are flagged instead of double-counting. Admins can enter a shift-specific, reasoned first/last punch correction or waive late minutes; raw events never change. Not-yet-completed shifts are pending/in progress, not absent.
 
-The report defaults to the latest completed 28th–27th period. Its start/end dates are editable and inclusive (up to 366 days), including ranges crossing calendar months. Prayer times are loaded for every touched month. It counts distinct working days and completed scheduled/present/missed/late shifts after employee creation; lateness is summed across both shifts before the configured threshold is applied.
+The report defaults to the range from one calendar month earlier through today. Its start/end dates are editable and inclusive (up to 366 days), including ranges crossing calendar months. Prayer times are loaded for every touched month. It counts distinct working days and completed scheduled/present/missed/late shifts after employee creation; lateness is summed across both shifts before the configured threshold is applied.
 
 The admin-authenticated prayer-time route fetches AlAdhan's monthly city calendar (default Jeddah, Saudi Arabia, Umm Al-Qura method 4) only when needed. It caches each day in `prayerTimes` and keeps manual date overrides even when the provider configuration changes. This uses the existing server credential; no new environment variable or Firestore composite index is needed. Deploy updated `firestore.rules` before opening the new admin UI.
 
@@ -371,3 +371,11 @@ The pure offer-pricing helper is mirrored in admin/mobile/web and checked agains
 See [AGENTS.md](./AGENTS.md#admin-content-and-catalog-presentation) for fields, caching, security paths and rollout details.
 
 Menu ? Arrange menu provides drag handles and up/down controls for category, per-category product, and app featured-section ordering. Save order commits the numbered list. Image editors also accept file drops. Feature a product in its edit form, then arrange it under Featured section. Normal category positions are independent of featured placement. Focused check: `node src/lib/catalog-order.test.mjs`.
+
+## Cash orders and operational updates
+
+Customer checkout is cash-only; online payment is informational. Customers/branch cashiers can edit quantities, notes and car details or cancel during the first 60 seconds before preparation. Active admins can correct/cancel later with a reason and immutable before/after history. The shared callables enforce ownership, branch, timing, revisions and print fences; direct client order updates are denied by the synchronized rules. Prepared-order edits require staff review and an explicit audited reprint.
+
+Attendance supports manual shift starts while keeping prayer references. Monthly dates default to today and one calendar month earlier; employee/date filters apply equally to the table and XLSX export. Exports contain summaries, calculated attendance, raw punches, delays and deduction minutes; no monetary rate is invented. A skippable walkthrough is replayable from the sidebar.
+
+Source changes do not deploy services or rules. Review the shared callable/rules/client rollout together when authorized. No builds, deployments, live changes or hardware acceptance were performed. See AGENTS.md for the contract and device limits.

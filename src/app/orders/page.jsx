@@ -2,7 +2,9 @@
 
 import React, { useState, useMemo } from "react";
 import { useI18n } from "@/lib/i18n";
-import { useOrders, updateOrderStatus, cancelOrder } from "@/hooks/useOrders";
+import { useOrders, updateOrderStatus } from "@/hooks/useOrders";
+import OrderChangePanel from "@/components/OrderChangePanel";
+import OrderAudit from "@/components/OrderAudit";
 import { useRestaurants } from "@/hooks/useRestaurants";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,17 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -44,7 +35,6 @@ import {
   ChefHat,
   Truck,
   CheckCircle,
-  XCircle,
   Loader2,
   Eye,
 } from "lucide-react";
@@ -88,7 +78,8 @@ export default function OrdersPage() {
   const [restaurantFilter, setRestaurantFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  const [actionError, setActionError] = useState("");
 
   const { restaurants } = useRestaurants();
 
@@ -105,10 +96,13 @@ export default function OrdersPage() {
   }, [statusFilter, restaurantFilter, dateFilter]);
 
   const { orders, loading } = useOrders(filters);
+  const selectedOrder = orders.find((order) => order.id === selectedOrderId);
+  const setSelectedOrder = (order) => setSelectedOrderId(order?.id || null);
 
   const handleAdvanceStatus = async (order) => {
     const next = getNextStatus(order.status);
     if (!next) return;
+    setActionError("");
     setActionLoading(order.id);
     try {
       await updateOrderStatus(
@@ -119,26 +113,14 @@ export default function OrdersPage() {
       );
     } catch (err) {
       console.error(err);
-    }
-    setActionLoading(null);
-  };
-
-  const handleCancel = async (orderId) => {
-    setActionLoading(orderId);
-    try {
-      await cancelOrder(
-        orderId,
-        user?.uid,
-        userProfile?.displayName || user?.email,
-      );
-    } catch (err) {
-      console.error(err);
+      setActionError(err.message);
     }
     setActionLoading(null);
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {actionError && <p role="alert" className="text-destructive">{actionError}</p>}
       <h1 className="text-2xl font-bold">{t.ordersTitle}</h1>
 
       {/* Filters */}
@@ -307,38 +289,7 @@ export default function OrdersPage() {
                       </Button>
                     )}
 
-                    {/* Cancel */}
-                    {order.status !== "cancelled" &&
-                      order.status !== "delivered" && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              disabled={isLoading}>
-                              <XCircle className="w-4 h-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                {t.cancelOrder}
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                {t.confirmCancel}
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleCancel(order.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                {t.confirm}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
+                    {order.status !== "cancelled" && <Button variant="outline" size="sm" disabled={isLoading} onClick={() => setSelectedOrder(order)}>{t.editOrCancelOrder}</Button>}
                   </div>
                 </CardContent>
               </Card>
@@ -351,7 +302,7 @@ export default function OrdersPage() {
       <Dialog
         open={!!selectedOrder}
         onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {t.orderDetails} #{selectedOrder?.orderNumber}
@@ -359,6 +310,8 @@ export default function OrdersPage() {
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-4">
+              <OrderChangePanel key={`${selectedOrder.id}:${selectedOrder.revision || 0}`} order={selectedOrder} admin />
+              <OrderAudit orderId={selectedOrder.id} />
               {selectedOrder.notes && <p className="whitespace-pre-wrap break-words rounded-md bg-muted p-3 text-sm"><strong>{t.orderNotes}:</strong> {selectedOrder.notes}</p>}
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="col-span-2">

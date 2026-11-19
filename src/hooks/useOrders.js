@@ -6,14 +6,14 @@ import {
   query,
   onSnapshot,
   doc,
-  updateDoc,
   orderBy,
   where,
   Timestamp,
   getDocs,
-  arrayUnion,
+  getDoc,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import app, { db } from "@/lib/firebase";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 /**
  * Real-time listener for orders with optional filters.
@@ -77,35 +77,17 @@ export function useOrders(filters) {
  * @param {string} [changedByUid] - UID of user making the change
  * @param {string} [changedByName] - Display name of user making the change
  */
-export async function updateOrderStatus(
-  orderId,
-  newStatus,
-  changedByUid,
-  changedByName,
-) {
-  const orderRef = doc(db, "orders", orderId);
-  const updateData = {
-    status: newStatus,
-    updatedAt: Timestamp.now(),
-  };
-
-  if (changedByUid) {
-    updateData.statusHistory = arrayUnion({
-      status: newStatus,
-      changedAt: Timestamp.now(),
-      changedBy: changedByUid,
-      changedByName: changedByName || "Unknown",
-    });
-  }
-
-  await updateDoc(orderRef, updateData);
+export async function updateOrderStatus(orderId, newStatus) {
+  const snapshot = await getDoc(doc(db, "orders", orderId));
+  const order = snapshot.data();
+  if (!order) throw new Error("Order not found");
+  const call = httpsCallable(getFunctions(app, "europe-west1"), "posAction");
+  return call({ action: "transition", branch: order.restaurantId, orderId, expected: order.status, target: newStatus });
 }
 
-/**
- * Cancel an order with audit trail.
- */
-export async function cancelOrder(orderId, changedByUid, changedByName) {
-  return updateOrderStatus(orderId, "cancelled", changedByUid, changedByName);
+export async function changeExistingOrder(order, operation, patch, reason, requestId) {
+  const call = httpsCallable(getFunctions(app, "europe-west1"), "changeCustomerOrder", { timeout: 30000 });
+  return (await call({ orderId: order.id, expectedRevision: order.revision || 0, operation, patch: patch || {}, reason, requestId })).data;
 }
 
 /**
