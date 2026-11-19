@@ -42,7 +42,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { useMenuItems } from "@/hooks/useMenu";
+import { useMenuItems, useSizeOptions } from "@/hooks/useMenu";
+import { offerDetails, offerPreview } from "@/lib/offer-pricing";
 import { formatSAR } from "@/lib/utils";
 import {
   Plus,
@@ -63,6 +64,8 @@ const emptyForm = {
   discount: "",
   originalPrice: 0,
   offerPrice: 0,
+  pricingType: "fixed",
+  discountPercent: 20,
   items: [],
   isActive: true,
 };
@@ -70,15 +73,22 @@ const emptyForm = {
 export default function OffersPage() {
   const { t, locale } = useI18n();
   const { offers, loading } = useOffers();
-  const { items: menuItems } = useMenuItems();
+  const { items: menuItems, loading: menuLoading } = useMenuItems();
+  const { sizes: sizeOptions, loading: sizesLoading } = useSizeOptions();
   const [dialog, setDialog] = useState(false);
   const [editingOffer, setEditingOffer] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const percentage = form.pricingType === "percentage";
+  const details = offerDetails(form, menuItems, sizeOptions);
+  const pricing = offerPreview(form, menuItems, sizeOptions);
+  const valid = !!pricing && !!form.titleEn.trim() && !!form.titleAr.trim();
 
   const openAdd = () => {
+    setSaveError("");
     setEditingOffer(null);
     setForm(emptyForm);
     setImageFile(null);
@@ -87,6 +97,7 @@ export default function OffersPage() {
   };
 
   const openEdit = (offer) => {
+    setSaveError("");
     setEditingOffer(offer);
     setForm({
       titleEn: offer.titleEn,
@@ -96,7 +107,9 @@ export default function OffersPage() {
       discount: offer.discount,
       originalPrice: offer.originalPrice,
       offerPrice: offer.offerPrice,
-      items: offer.items || [],
+      pricingType: offer.pricingType || "fixed",
+      discountPercent: offer.discountPercent ?? 20,
+      items: (offer.items || []).map((line) => ({ ...line })),
       isActive: offer.isActive ?? true,
     });
     setImagePreview(offer.image || "");
@@ -117,14 +130,14 @@ export default function OffersPage() {
       ...form,
       items: [
         ...form.items,
-        { menuItemId: "", nameEn: "", nameAr: "", qty: 1 },
+        { menuItemId: "", nameEn: "", nameAr: "", sizeId: null, qty: 1 },
       ],
     });
   };
 
   const updateItemRow = (index, field, value) => {
     const updated = [...form.items];
-    updated[index][field] = value;
+    updated[index] = { ...updated[index], [field]: value };
     setForm({ ...form, items: updated });
   };
 
@@ -135,6 +148,7 @@ export default function OffersPage() {
     updated[index] = {
       ...updated[index],
       menuItemId,
+      sizeId: null,
       nameEn: menuItem.nameEn,
       nameAr: menuItem.nameAr,
     };
@@ -148,51 +162,27 @@ export default function OffersPage() {
     });
   };
 
-  const handleOriginalPriceChange = (value) => {
-    const originalPrice = Number(value);
-    const newForm = { ...form, originalPrice };
-    const discountNum = parseFloat(form.discount);
-    if (!isNaN(discountNum) && discountNum > 0 && originalPrice > 0) {
-      newForm.offerPrice = Math.round(originalPrice * (1 - discountNum / 100));
-    } else if (form.offerPrice > 0 && originalPrice > 0) {
-      const pct = Math.round((1 - form.offerPrice / originalPrice) * 100);
-      newForm.discount = pct > 0 ? `${pct}%` : "";
-    }
-    setForm(newForm);
-  };
-
-  const handleOfferPriceChange = (value) => {
-    const offerPrice = Number(value);
-    const newForm = { ...form, offerPrice };
-    if (form.originalPrice > 0 && offerPrice >= 0) {
-      const pct = Math.round((1 - offerPrice / form.originalPrice) * 100);
-      newForm.discount = pct > 0 ? `${pct}%` : "";
-    }
-    setForm(newForm);
-  };
-
-  const handleDiscountChange = (value) => {
-    const newForm = { ...form, discount: value };
-    const discountNum = parseFloat(value);
-    if (!isNaN(discountNum) && discountNum >= 0 && form.originalPrice > 0) {
-      newForm.offerPrice = Math.round(
-        form.originalPrice * (1 - discountNum / 100),
-      );
-    }
-    setForm(newForm);
-  };
-
   const handleSave = async () => {
+    if (!valid || menuLoading || sizesLoading) { setSaveError(percentage ? t.percentageOfferValidation : t.offerValidation); return; }
+    setSaveError("");
+    const saved = {
+      ...form,
+      titleEn: form.titleEn.trim(), titleAr: form.titleAr.trim(),
+      originalPrice: pricing.originalPrice, offerPrice: pricing.offerPrice, discount: pricing.discount,
+      discountPercent: percentage ? form.discountPercent : null,
+      items: form.items.map((line) => ({ ...line, sizeId: percentage ? null : line.sizeId })),
+    };
     setSaving(true);
     try {
       if (editingOffer) {
-        await updateOffer(editingOffer.id, { ...form }, imageFile || undefined);
+        await updateOffer(editingOffer.id, saved, imageFile || undefined);
       } else {
-        await addOffer({ ...form, image: "" }, imageFile || undefined);
+        await addOffer({ ...saved, image: "" }, imageFile || undefined);
       }
       setDialog(false);
     } catch (err) {
       console.error(err);
+      setSaveError(t.offerSaveFailed);
     }
     setSaving(false);
   };
@@ -225,7 +215,9 @@ export default function OffersPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {offers.map((offer) => (
+          {offers.map((savedOffer) => {
+            const offer = { ...savedOffer, ...offerPreview(savedOffer, menuItems, sizeOptions) };
+            return (
             <Card key={offer.id} className="overflow-hidden">
               {offer.image ? (
                 <div className="h-48 relative bg-muted">
@@ -273,7 +265,7 @@ export default function OffersPage() {
 
                 <div className="flex items-center gap-3">
                   <span className="text-lg font-bold text-primary">
-                    {formatSAR(offer.offerPrice)}
+                    {offer.pricingType === "percentage" && `${t.offerFrom} `}{formatSAR(offer.offerPrice)}
                   </span>
                   <span className="text-sm text-muted-foreground line-through">
                     {formatSAR(offer.originalPrice)}
@@ -286,6 +278,7 @@ export default function OffersPage() {
                       <span key={i}>
                         {locale === "ar" ? item.nameAr : item.nameEn} x
                         {item.qty}
+                        {item.sizeId && ` - ${sizeOptions.find((size) => size.id === item.sizeId)?.[locale === "ar" ? "nameAr" : "nameEn"] || ""}`}
                         {i < offer.items.length - 1 ? " • " : ""}
                       </span>
                     ))}
@@ -327,7 +320,7 @@ export default function OffersPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          ); })}
         </div>
       )}
 
@@ -384,33 +377,37 @@ export default function OffersPage() {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label>{t.offerPricingType}</Label>
+              <Select value={form.pricingType} onValueChange={(pricingType) => setForm({
+                ...form, pricingType, offerPrice: 0, items: form.items.map((line) => ({ ...line, sizeId: null })),
+              })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed">{t.offerFixedType}</SelectItem>
+                  <SelectItem value="percentage">{t.offerPercentageType}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-sm text-muted-foreground">{percentage ? t.percentageOfferHelp : t.fixedOfferHelp}</p>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>{t.discount}</Label>
-                <Input
-                  value={form.discount}
-                  onChange={(e) => handleDiscountChange(e.target.value)}
-                  placeholder="e.g. 20%"
-                  dir="ltr"
-                />
+                <Label>{percentage ? t.offerDiscountPercent : t.discount}</Label>
+                {percentage ? (
+                  <Input type="number" min="0.01" max="99.99" step="0.01" value={form.discountPercent}
+                    onChange={(e) => setForm({ ...form, discountPercent: Number(e.target.value) })} dir="ltr" />
+                ) : <Input value={pricing?.discount || "-"} readOnly dir="ltr" />}
               </div>
               <div className="space-y-2">
-                <Label>{t.originalPrice}</Label>
-                <Input
-                  type="number"
-                  value={form.originalPrice}
-                  onChange={(e) => handleOriginalPriceChange(e.target.value)}
-                  dir="ltr"
-                />
+                <Label>{percentage ? t.offerStartingRegularPrice : t.originalPrice}</Label>
+                <Input value={percentage ? (pricing ? formatSAR(pricing.originalPrice) : "-") : (details ? formatSAR(details.originalMinor / 100) : "-")} readOnly dir="ltr" />
               </div>
               <div className="space-y-2">
-                <Label>{t.offerPrice}</Label>
-                <Input
-                  type="number"
-                  value={form.offerPrice}
-                  onChange={(e) => handleOfferPriceChange(e.target.value)}
-                  dir="ltr"
-                />
+                <Label>{percentage ? t.offerStartingPrice : t.offerPrice}</Label>
+                {percentage ? <Input value={pricing ? formatSAR(pricing.offerPrice) : "-"} readOnly dir="ltr" /> : (
+                  <Input type="number" min="0.01" step="0.01" value={form.offerPrice}
+                    onChange={(e) => setForm({ ...form, offerPrice: Number(e.target.value) })} dir="ltr" />
+                )}
               </div>
             </div>
 
@@ -463,7 +460,7 @@ export default function OffersPage() {
               {form.items.map((item, idx) => (
                 <div
                   key={idx}
-                  className="grid grid-cols-[1fr_auto_auto] gap-2 items-end p-3 rounded-lg border bg-muted/30">
+                  className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto_auto] gap-2 items-end p-3 rounded-lg border bg-muted/30">
                   <div className="space-y-1">
                     <Label className="text-xs">{t.menuItem}</Label>
                     <SearchableSelect
@@ -473,12 +470,25 @@ export default function OffersPage() {
                       searchPlaceholder={
                         t.searchMenuItems || "Search menu items..."
                       }
-                      options={menuItems.map((m) => ({
+                      options={menuItems.filter((m) => m.isActive !== false).map((m) => ({
                         value: m.id,
                         label: locale === "ar" ? m.nameAr : m.nameEn,
                       }))}
                       className="h-8 text-sm"
                     />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t.offerSize}</Label>
+                    {percentage ? <p className="text-xs text-muted-foreground py-2">{menuItems.find((m) => m.id === item.menuItemId)?.availableSizes?.length ? t.offerCustomerChoosesSize : t.offerNoSize}</p> : menuItems.find((m) => m.id === item.menuItemId)?.availableSizes?.length ? (
+                      <Select value={item.sizeId || ""} onValueChange={(value) => updateItemRow(idx, "sizeId", value)}>
+                        <SelectTrigger className="h-8"><SelectValue placeholder={t.offerChooseSize} /></SelectTrigger>
+                        <SelectContent>
+                          {sizeOptions.filter((size) => menuItems.find((m) => m.id === item.menuItemId)?.availableSizes?.includes(size.id)).map((size) => (
+                            <SelectItem key={size.id} value={size.id}>{locale === "ar" ? size.nameAr : size.nameEn}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : <p className="text-xs text-muted-foreground py-2">{t.offerNoSize}</p>}
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">{t.quantity}</Label>
@@ -491,6 +501,8 @@ export default function OffersPage() {
                       dir="ltr"
                       className="h-8 text-sm w-20"
                       min={1}
+                      max={999}
+                      step={1}
                     />
                   </div>
                   <div className="flex justify-end pb-1">
@@ -517,11 +529,13 @@ export default function OffersPage() {
               <Label>{t.active}</Label>
             </div>
           </div>
+          {!valid && form.items.length > 0 && <p className="text-sm text-muted-foreground">{percentage ? t.percentageOfferValidation : t.offerValidation}</p>}
+          {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialog(false)}>
               {t.cancel}
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving || menuLoading || sizesLoading || !valid}>
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {t.save}
             </Button>

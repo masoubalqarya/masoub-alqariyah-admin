@@ -1,4 +1,22 @@
 const en = {
+  // Fixed-price offers
+  offerPricingType: "Pricing model",
+  offerFixedType: "Fixed-price bundle",
+  offerPercentageType: "Percentage discount",
+  offerDiscountPercent: "Discount (%)",
+  offerStartingPrice: "Starting offer price",
+  offerStartingRegularPrice: "Starting regular price",
+  offerFrom: "From",
+  offerCustomerChoosesSize: "Customer chooses any attached size",
+  percentageOfferHelp: "Set a percentage discount for these products and quantities. Customers choose their sizes. The discount applies to the selected sizes and default cooking options. Starting prices use the cheapest sizes; the final total depends on the customer's choices.",
+  percentageOfferValidation: "Enter both titles, valid products and whole quantities (up to 999 units total). Enter a percentage greater than 0 and less than 100, with up to two decimal places. The rounded offer must have a positive price and savings.",
+  fixedOfferHelp: "Choose the exact size for each product. Customers receive these sizes at one fixed bundle price. Regular price and savings are calculated automatically, including the default cooking option.",
+  offerSize: "Included size",
+  offerChooseSize: "Choose a size",
+  offerNoSize: "No size options",
+  offerValidation: "Enter both titles, valid products, sizes and whole quantities (up to 999 units total). The offer price must be greater than zero and below the regular total.",
+  offerSaveFailed: "Unable to save the offer. Please try again.",
+
   // Fulfillment
   inStock: "In stock",
   outOfStock: "Out of stock",

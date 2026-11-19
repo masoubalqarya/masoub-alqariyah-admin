@@ -70,6 +70,7 @@
 
 /**
  * @typedef {Object} OfferItem
+ * @property {string|null} sizeId Fixed bundle size ID; null for percentage offers (customer chooses) and unsized products.
  * @property {string} menuItemId
  * @property {string} nameEn
  * @property {string} nameAr
@@ -78,6 +79,8 @@
 
 /**
  * @typedef {Object} Offer
+ * @property {"fixed"|"percentage"} [pricingType] Defaults to fixed. Percentage applies only to the configured products/quantities.
+ * @property {number|null} discountPercent Percentage rate, greater than 0 and less than 100, up to 2 decimals; null for fixed bundles.
  * @property {string} id
  * @property {string} titleEn
  * @property {string} titleAr
@@ -85,8 +88,8 @@
  * @property {string} descriptionAr
  * @property {string} image
  * @property {string} discount
- * @property {number} originalPrice
- * @property {number} offerPrice
+ * @property {number} originalPrice Derived regular total; starting total for percentage offers.
+ * @property {number} offerPrice Fixed bundle price, or derived starting price for percentage offers (not the pricing authority).
  * @property {OfferItem[]} items
  * @property {boolean} isActive
  */
@@ -101,6 +104,7 @@
 
 /**
  * @typedef {Object} OrderItemOption
+ * @property {string} id Stable catalog/option ID used for authoritative pricing.
  * @property {string} nameEn
  * @property {string} nameAr
  * @property {number} priceAdd
@@ -108,6 +112,10 @@
 
 /**
  * @typedef {Object} OrderItem
+ * @property {string} [offerId]
+ * @property {string} [offerGroupId]
+ * @property {number} [offerQty]
+ * @property {number} [offerLineIndex] Index of the configured offer row; rounding may split it into two unit-price lines.
  * @property {string} nameEn
  * @property {string} nameAr
  * @property {number} price
