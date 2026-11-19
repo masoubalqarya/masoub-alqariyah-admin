@@ -81,6 +81,12 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Public mobile homepage and platform update policy, managed only by active admins.
+    match /appSettings/mobile {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Categories - Admin full access, public read for mobile app
     match /categories/{categoryId} {
       allow read: if true;

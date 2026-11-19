@@ -1,5 +1,7 @@
 /**
  * @typedef {Object} Category
+ * @property {number} [sortOrder] Display position, lowest first; natural Arabic name then ID breaks ties.
+ * @property {string} [image] Category image URL.
  * @property {string} id
  * @property {string} nameEn
  * @property {string} nameAr
@@ -22,6 +24,8 @@
 
 /**
  * @typedef {Object} MenuItem
+ * @property {number} [sortOrder] Position within category, independent of featured placement.
+ * @property {string[]} [images] Ordered gallery; first image is also saved as image for covers/cart.
  * @property {string} id
  * @property {string} nameEn
  * @property {string} nameAr
@@ -34,8 +38,8 @@
  * @property {string[]} [availableExtras]   - ids from extrasOptions
  * @property {string[]} [availableSizes]    - ids from sizeOptions
  * @property {boolean} [inStock] Missing means available; false prevents new customer orders.
- * @property {boolean} [isFeatured] Featured items sort before regular items.
- * @property {number} [featuredRank] Featured ordering, lowest first; default 0.
+ * @property {boolean} [isFeatured] Includes this product in the independent app homepage featured section.
+ * @property {number} [featuredRank] App featured-section order, lowest first; independent of category position.
  * @property {Object.<string,number>} [sizeCalories] - kcal per sizeOption id
  * @property {Object.<string,number>} [sizePriceAdd] - extra SAR per size (overrides SizeOption.priceAdd)
  * @property {number} calories              - base kcal (required)
@@ -79,6 +83,7 @@
 
 /**
  * @typedef {Object} Offer
+ * @property {string[]} [images] Ordered gallery; first image is also saved as image.
  * @property {"fixed"|"percentage"} [pricingType] Defaults to fixed. Percentage applies only to the configured products/quantities.
  * @property {number|null} discountPercent Percentage rate, greater than 0 and less than 100, up to 2 decimals; null for fixed bundles.
  * @property {string} id
@@ -286,3 +291,16 @@
 // This file only contains JSDoc type definitions.
 // Import types in other files using JSDoc @type comments.
 export {};
+
+/**
+ * @typedef {Object} AppUpdatePolicy
+ * @property {"off"|"optional"|"forced"} mode
+ * @property {string} version Target major.minor.patch version; only older clients are prompted.
+ * @property {string} url HTTPS platform store app URL; required unless disabled.
+ */
+
+/**
+ * @typedef {Object} MobileAppSettings
+ * @property {{titleEn: string, titleAr: string, descriptionEn: string, descriptionAr: string, image: string}} hero
+ * @property {{ios: AppUpdatePolicy, android: AppUpdatePolicy}} updates
+ */

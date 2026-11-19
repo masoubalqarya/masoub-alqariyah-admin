@@ -8,11 +8,20 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
-  orderBy,
-  query,
+  writeBatch,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
+import { uploadImages } from "@/lib/catalog-images";
+import { sortCategories, sortProducts } from "@/lib/catalog-order";
+
+// One atomic save renumbers the displayed list to 1..N without editing other fields.
+export async function saveCatalogOrder(collectionName, ids, field = "sortOrder") {
+  const allowed = collectionName === "categories" ? field === "sortOrder" : collectionName === "menuItems" && ["sortOrder", "featuredRank"].includes(field);
+  if (!allowed || ids.length > 500 || new Set(ids).size !== ids.length || ids.some((id) => typeof id !== "string" || !id)) throw new Error("invalid-order");
+  const batch = writeBatch(db);
+  ids.forEach((id, index) => batch.update(doc(db, collectionName, id), { [field]: index + 1 }));
+  await batch.commit();
+}
 
 // ─── Menu Items ────────────────────────────────────────────
 
@@ -21,13 +30,12 @@ export function useMenuItems() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, "menuItems"), orderBy("category"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(collection(db, "menuItems"), (snapshot) => {
       const data = snapshot.docs.map((d) => ({
         id: d.id,
         ...d.data(),
       }));
-      setItems(data);
+      setItems(sortProducts(data, []));
       setLoading(false);
     });
     return unsubscribe;
@@ -36,41 +44,18 @@ export function useMenuItems() {
   return { items, loading };
 }
 
-export async function addMenuItem(item, imageFile) {
-  let imageUrl = item.image || "";
-
-  if (imageFile) {
-    const storageRef = ref(
-      storage,
-      `menuItems/${Date.now()}_${imageFile.name}`,
-    );
-    const snapshot = await uploadBytes(storageRef, imageFile);
-    imageUrl = await getDownloadURL(snapshot.ref);
-  }
-
-  const docRef = await addDoc(collection(db, "menuItems"), {
-    ...item,
-    image: imageUrl,
-  });
-
-  // Update the doc with its own ID for consistency
+export async function addMenuItem(item, gallery = []) {
+  const images = await uploadImages(gallery, "menuItems");
+  const docRef = await addDoc(collection(db, "menuItems"), { ...item, images, image: images[0] || "" });
   await updateDoc(docRef, { id: docRef.id });
   return docRef.id;
 }
 
-export async function updateMenuItem(id, data, imageFile) {
-  let imageUrl = data.image;
-
-  if (imageFile) {
-    const storageRef = ref(storage, `menuItems/${id}_${imageFile.name}`);
-    const snapshot = await uploadBytes(storageRef, imageFile);
-    imageUrl = await getDownloadURL(snapshot.ref);
-  }
-
-  const docRef = doc(db, "menuItems", id);
-  await updateDoc(docRef, {
+export async function updateMenuItem(id, data, gallery) {
+  const images = gallery === undefined ? undefined : await uploadImages(gallery, "menuItems");
+  await updateDoc(doc(db, "menuItems", id), {
     ...data,
-    ...(imageUrl !== undefined ? { image: imageUrl } : {}),
+    ...(images === undefined ? {} : { images, image: images[0] || "" }),
   });
 }
 
@@ -90,7 +75,7 @@ export function useCategories() {
         id: d.id,
         ...d.data(),
       }));
-      setCategories(data);
+      setCategories(sortCategories(data));
       setLoading(false);
     });
     return unsubscribe;

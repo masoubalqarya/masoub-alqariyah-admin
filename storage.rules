@@ -1,6 +1,23 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    function isActiveAdmin() {
+      return request.auth != null &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin' &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.isActive == true;
+    }
+
+    match /categories/{allPaths=**} {
+      allow read: if true;
+      allow write: if isActiveAdmin() && (request.resource == null ||
+        (request.resource.size <= 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*')));
+    }
+
+    match /appSettings/{allPaths=**} {
+      allow read: if true;
+      allow write: if isActiveAdmin() && (request.resource == null ||
+        (request.resource.size <= 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*')));
+    }
 
     // Allow admin users full access to all storage paths
     match /menuItems/{allPaths=**} {

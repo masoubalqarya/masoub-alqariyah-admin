@@ -14,6 +14,7 @@ import {
   Globe,
   Users,
   CalendarCheck,
+  Settings,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/lib/i18n";
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/orders", icon: ShoppingCart, labelKey: "orders" },
   { href: "/menu", icon: UtensilsCrossed, labelKey: "menu" },
   { href: "/offers", icon: Tag, labelKey: "offers" },
+  { href: "/app-settings", icon: Settings, labelKey: "appSettings" },
   { href: "/restaurants", icon: Store, labelKey: "restaurants" },
   { href: "/users", icon: Users, labelKey: "users" },
   { href: "/attendance", icon: CalendarCheck, labelKey: "attendance" },

@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
+import ImageGalleryEditor from "@/components/ImageGalleryEditor";
+import CatalogOrderEditor from "@/components/CatalogOrderEditor";
+import { nextPosition } from "@/lib/catalog-order";
+import { uploadImages } from "@/lib/catalog-images";
 import { useI18n } from "@/lib/i18n";
 import {
   useMenuItems,
@@ -68,8 +72,6 @@ import {
   Pencil,
   Trash2,
   Loader2,
-  Upload,
-  X,
   ImageIcon,
 } from "lucide-react";
 
@@ -93,6 +95,7 @@ const emptyForm = {
   inStock: true,
   isFeatured: false,
   featuredRank: 0,
+  sortOrder: 0,
 };
 
 const emptyCooking = {
@@ -116,19 +119,24 @@ export default function MenuPage() {
   const { extras } = useExtrasOptions();
   const { allergies: allergyOptions } = useAllergiesOptions();
 
+  const [activeTab, setActiveTab] = useState("items");
+  const [orderTarget, setOrderTarget] = useState("categories");
+  const arrange = (target) => { setOrderTarget(target); setActiveTab("ordering"); };
+
   // Menu item form state
   const [itemDialog, setItemDialog] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [form, setForm] = useState(emptyForm);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState("");
+  const [gallery, setGallery] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   // Category form
   const [catDialog, setCatDialog] = useState(false);
   const [editingCat, setEditingCat] = useState(null);
-  const [catForm, setCatForm] = useState({ id: "", nameEn: "", nameAr: "" });
+  const [catForm, setCatForm] = useState({ id: "", nameEn: "", nameAr: "", sortOrder: 0 });
+
+  const [catImages, setCatImages] = useState([]);
 
   // Extras form
   const [extDialog, setExtDialog] = useState(false);
@@ -159,9 +167,8 @@ export default function MenuPage() {
 
   const openAddItem = () => {
     setEditingItem(null);
-    setForm(emptyForm);
-    setImageFile(null);
-    setImagePreview("");
+    setForm({ ...emptyForm, sortOrder: nextPosition(items) });
+    setGallery([]);
     setError("");
     setItemDialog(true);
   };
@@ -186,20 +193,13 @@ export default function MenuPage() {
       inStock: item.inStock !== false,
       isFeatured: item.isFeatured === true,
       featuredRank: Number.isFinite(item.featuredRank) ? item.featuredRank : 0,
+      sortOrder: item.sortOrder ?? 0,
     });
-    setImagePreview(item.image || "");
-    setImageFile(null);
+    setGallery(item.images || (item.image ? [item.image] : []));
     setError("");
     setItemDialog(true);
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
 
   const addCookingRow = () => {
     setForm({
@@ -253,23 +253,34 @@ export default function MenuPage() {
       setError(t.errorSizeCaloriesRequired);
       return;
     }
+    const currentItem = items.find((item) => item.id === editingItem?.id);
+    const orderedForm = {
+      ...form,
+      sortOrder: !editingItem || editingItem.category !== form.category
+        ? nextPosition(items.filter((item) => item.category === form.category))
+        : currentItem?.sortOrder ?? form.sortOrder,
+      featuredRank: form.isFeatured && !editingItem?.isFeatured
+        ? nextPosition(items.filter((item) => item.isFeatured === true), "featuredRank")
+        : currentItem?.featuredRank ?? form.featuredRank,
+    };
     setSaving(true);
     try {
       if (editingItem) {
         await updateMenuItem(
           editingItem.id,
-          { ...form, allergies: asIdList(form.allergies), image: imagePreview || "" },
-          imageFile || undefined,
+          { ...orderedForm, allergies: asIdList(form.allergies), image: "" },
+          gallery,
         );
       } else {
         await addMenuItem(
-          { ...form, allergies: asIdList(form.allergies), image: "", id: "" },
-          imageFile || undefined,
+          { ...orderedForm, allergies: asIdList(form.allergies), image: "", id: "" },
+          gallery,
         );
       }
       setItemDialog(false);
     } catch (err) {
       console.error(err);
+      setError(t.catalogSaveFailed);
     }
     setSaving(false);
   };
@@ -286,36 +297,35 @@ export default function MenuPage() {
 
   const openAddCat = () => {
     setEditingCat(null);
-    setCatForm({ id: "", nameEn: "", nameAr: "" });
+    setCatForm({ id: "", nameEn: "", nameAr: "", sortOrder: nextPosition(categories) });
+    setCatImages([]);
+    setError("");
     setCatDialog(true);
   };
 
   const openEditCat = (cat) => {
     setEditingCat(cat);
-    setCatForm({ id: cat.id, nameEn: cat.nameEn, nameAr: cat.nameAr });
+    setCatForm({ id: cat.id, nameEn: cat.nameEn, nameAr: cat.nameAr, sortOrder: cat.sortOrder ?? 0 });
+    setCatImages(cat.image ? [cat.image] : []);
+    setError("");
     setCatDialog(true);
   };
 
   const handleSaveCat = async () => {
-    setSaving(true);
-    try {
-      if (editingCat) {
-        await updateCategory(editingCat.id, {
-          nameEn: catForm.nameEn,
-          nameAr: catForm.nameAr,
-        });
-      } else {
-        await addCategory({
-          id: catForm.id || undefined,
-          nameEn: catForm.nameEn,
-          nameAr: catForm.nameAr,
-        });
-      }
-      setCatDialog(false);
-    } catch (err) {
-      console.error(err);
+    if (!catForm.nameEn.trim() || !catForm.nameAr.trim()) {
+      setError(t.catalogValidation); return;
     }
-    setSaving(false);
+    setSaving(true);
+    setError("");
+    try {
+      const images = await uploadImages(catImages, "categories");
+      const data = { nameEn: catForm.nameEn.trim(), nameAr: catForm.nameAr.trim(), sortOrder: Number(catForm.sortOrder), image: images[0] || "" };
+      if (editingCat) await updateCategory(editingCat.id, data);
+      else await addCategory({ ...data, ...(catForm.id.trim() ? { id: catForm.id.trim() } : {}) });
+      setCatDialog(false);
+    } catch {
+      setError(t.catalogSaveFailed);
+    } finally { setSaving(false); }
   };
 
   const handleDeleteCat = async (id) => {
@@ -414,13 +424,17 @@ export default function MenuPage() {
 
   // ─── Size Handlers ───────────────────────────────────────
 
-  const handleSaveSize = async (id, priceAdd) => {
-    await updateSizeOption(id, { priceAdd });
-    setSizeEditing((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
+  const handleSaveSize = async (id, data) => {
+    if (!data.nameEn.trim() || !data.nameAr.trim() || !Number.isFinite(Number(data.priceAdd)) || Number(data.priceAdd) < 0) {
+      setError(t.catalogValidation); return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await updateSizeOption(id, { nameEn: data.nameEn.trim(), nameAr: data.nameAr.trim(), priceAdd: Number(data.priceAdd) });
+      setSizeEditing((prev) => { const next = { ...prev }; delete next[id]; return next; });
+    } catch { setError(t.catalogSaveFailed); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -428,10 +442,11 @@ export default function MenuPage() {
       <h1 className="text-2xl font-bold">{t.menuTitle}</h1>
       {error && !itemDialog && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
-      <Tabs defaultValue="items">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="h-auto flex-wrap justify-start">
           <TabsTrigger value="items">{t.menuItems}</TabsTrigger>
           <TabsTrigger value="categories">{t.categories}</TabsTrigger>
+          <TabsTrigger value="ordering">{t.arrangeMenu}</TabsTrigger>
           <TabsTrigger value="sizes">{t.sizeOptions}</TabsTrigger>
           <TabsTrigger value="extras">{t.extrasOptions}</TabsTrigger>
           <TabsTrigger value="allergies">{t.allergiesOptions}</TabsTrigger>
@@ -454,10 +469,9 @@ export default function MenuPage() {
             <div className="space-y-6">
               {categories.map((cat) => (
                 <Card key={cat.id}>
-                  <CardHeader>
-                    <CardTitle>
-                      {locale === "ar" ? cat.nameAr : cat.nameEn}
-                    </CardTitle>
+                  <CardHeader className="flex-row items-center justify-between gap-3">
+                    <CardTitle>{locale === "ar" ? cat.nameAr : cat.nameEn}</CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => arrange(`category:${cat.id}`)}>{t.arrangeProducts}</Button>
                   </CardHeader>
                   <CardContent>
                     {(grouped[cat.id] || []).length === 0 ? (
@@ -567,7 +581,8 @@ export default function MenuPage() {
 
         {/* ─── Categories Tab ────────────────────────────── */}
         <TabsContent value="categories">
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end gap-2 mb-4">
+            <Button variant="outline" onClick={() => arrange("categories")}>{t.arrangeCategories}</Button>
             <Button onClick={openAddCat}>
               <Plus className="w-4 h-4" />
               {t.addCategory}
@@ -661,17 +676,17 @@ export default function MenuPage() {
                       <TableCell className="font-mono text-sm">
                         {size.id}
                       </TableCell>
-                      <TableCell>{size.nameEn}</TableCell>
-                      <TableCell>{size.nameAr}</TableCell>
+                      <TableCell>{sizeEditing[size.id] ? <Input aria-label={t.nameEn} value={sizeEditing[size.id].nameEn} onChange={(e) => setSizeEditing({ ...sizeEditing, [size.id]: { ...sizeEditing[size.id], nameEn: e.target.value } })} dir="ltr" /> : size.nameEn}</TableCell>
+                      <TableCell>{sizeEditing[size.id] ? <Input aria-label={t.nameAr} value={sizeEditing[size.id].nameAr} onChange={(e) => setSizeEditing({ ...sizeEditing, [size.id]: { ...sizeEditing[size.id], nameAr: e.target.value } })} dir="rtl" /> : size.nameAr}</TableCell>
                       <TableCell>
                         {sizeEditing[size.id] !== undefined ? (
                           <Input
                             type="number"
-                            value={sizeEditing[size.id]}
+                            value={sizeEditing[size.id].priceAdd}
                             onChange={(e) =>
                               setSizeEditing({
                                 ...sizeEditing,
-                                [size.id]: Number(e.target.value),
+                                [size.id]: { ...sizeEditing[size.id], priceAdd: e.target.value },
                               })
                             }
                             className="w-24"
@@ -688,7 +703,7 @@ export default function MenuPage() {
                               size="sm"
                               onClick={() =>
                                 handleSaveSize(size.id, sizeEditing[size.id])
-                              }>
+                              } disabled={saving}>
                               {t.save}
                             </Button>
                             <Button
@@ -712,7 +727,7 @@ export default function MenuPage() {
                             onClick={() =>
                               setSizeEditing({
                                 ...sizeEditing,
-                                [size.id]: size.priceAdd,
+                                [size.id]: { nameEn: size.nameEn, nameAr: size.nameAr, priceAdd: size.priceAdd },
                               })
                             }>
                             <Pencil className="w-3.5 h-3.5" />
@@ -884,6 +899,9 @@ export default function MenuPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="ordering" forceMount className={activeTab === "ordering" ? "" : "hidden"}>
+          <CatalogOrderEditor categories={categories} items={items} target={orderTarget} onTargetChange={setOrderTarget} loading={itemsLoading || catsLoading} />
+        </TabsContent>
       </Tabs>
 
       {/* ─── Menu Item Dialog ──────────────────────────────── */}
@@ -909,11 +927,7 @@ export default function MenuPage() {
                 <Switch checked={form.isFeatured} onCheckedChange={(isFeatured) => setForm({ ...form, isFeatured })} />
                 {t.featured}
               </label>
-              {form.isFeatured && <label className="space-y-1 text-sm">
-                {t.featuredRank}
-                <Input type="number" min="0" step="1" value={form.featuredRank}
-                  onChange={(event) => setForm({ ...form, featuredRank: Math.max(0, Math.floor(Number(event.target.value) || 0)) })} />
-              </label>}
+              {form.isFeatured && <p className="text-xs text-muted-foreground">{t.featuredOrderHelp}</p>}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -991,47 +1005,9 @@ export default function MenuPage() {
               </div>
             </div>
 
-            {/* Image Upload (optional) */}
             <div className="space-y-2">
-              <Label>
-                {t.image}{" "}
-                <span className="text-muted-foreground font-normal">
-                  ({t.optional})
-                </span>
-              </Label>
-              <div className="flex items-center gap-4">
-                {imagePreview ? (
-                  <div className="relative w-24 h-24 rounded-lg overflow-hidden border">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setImagePreview("");
-                        setImageFile(null);
-                      }}
-                      className="absolute top-1 end-1 bg-destructive text-destructive-foreground rounded-full p-0.5">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="w-24 h-24 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
-                    <Upload className="w-5 h-5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground mt-1">
-                      {t.uploadImage}
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageChange}
-                    />
-                  </label>
-                )}
-              </div>
+              <Label>{t.images}</Label>
+              <ImageGalleryEditor images={gallery} onChange={setGallery} disabled={saving} />
             </div>
 
             {/* Base Calories */}
@@ -1378,7 +1354,12 @@ export default function MenuPage() {
               {editingCat ? t.editCategory : t.addCategory}
             </DialogTitle>
           </DialogHeader>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t.image}</Label>
+              <ImageGalleryEditor images={catImages} onChange={setCatImages} maxImages={1} disabled={saving} />
+            </div>
             {!editingCat && (
               <div className="space-y-2">
                 <Label>ID</Label>

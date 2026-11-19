@@ -9,8 +9,8 @@ import {
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
+import { uploadImages } from "@/lib/catalog-images";
 
 export function useOffers() {
   const [offers, setOffers] = useState([]);
@@ -31,35 +31,18 @@ export function useOffers() {
   return { offers, loading };
 }
 
-export async function addOffer(offer, imageFile) {
-  let imageUrl = offer.image || "";
-
-  if (imageFile) {
-    const storageRef = ref(storage, `offers/${Date.now()}_${imageFile.name}`);
-    const snapshot = await uploadBytes(storageRef, imageFile);
-    imageUrl = await getDownloadURL(snapshot.ref);
-  }
-
-  const docRef = await addDoc(collection(db, "offers"), {
-    ...offer,
-    image: imageUrl,
-  });
+export async function addOffer(offer, gallery = []) {
+  const images = await uploadImages(gallery, "offers");
+  const docRef = await addDoc(collection(db, "offers"), { ...offer, images, image: images[0] || "" });
   await updateDoc(docRef, { id: docRef.id });
   return docRef.id;
 }
 
-export async function updateOffer(id, data, imageFile) {
-  let imageUrl = data.image;
-
-  if (imageFile) {
-    const storageRef = ref(storage, `offers/${id}_${imageFile.name}`);
-    const snapshot = await uploadBytes(storageRef, imageFile);
-    imageUrl = await getDownloadURL(snapshot.ref);
-  }
-
+export async function updateOffer(id, data, gallery) {
+  const images = gallery === undefined ? undefined : await uploadImages(gallery, "offers");
   await updateDoc(doc(db, "offers", id), {
     ...data,
-    ...(imageUrl !== undefined ? { image: imageUrl } : {}),
+    ...(images === undefined ? {} : { images, image: images[0] || "" }),
   });
 }
 

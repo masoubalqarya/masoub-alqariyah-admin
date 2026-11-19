@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import ImageGalleryEditor from "@/components/ImageGalleryEditor";
 import { useI18n } from "@/lib/i18n";
 import {
   useOffers,
@@ -50,8 +51,6 @@ import {
   Pencil,
   Trash2,
   Loader2,
-  Upload,
-  X,
   Tag,
   ImageIcon,
 } from "lucide-react";
@@ -78,8 +77,7 @@ export default function OffersPage() {
   const [dialog, setDialog] = useState(false);
   const [editingOffer, setEditingOffer] = useState(null);
   const [form, setForm] = useState(emptyForm);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState("");
+  const [gallery, setGallery] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const percentage = form.pricingType === "percentage";
@@ -91,8 +89,7 @@ export default function OffersPage() {
     setSaveError("");
     setEditingOffer(null);
     setForm(emptyForm);
-    setImageFile(null);
-    setImagePreview("");
+    setGallery([]);
     setDialog(true);
   };
 
@@ -112,18 +109,10 @@ export default function OffersPage() {
       items: (offer.items || []).map((line) => ({ ...line })),
       isActive: offer.isActive ?? true,
     });
-    setImagePreview(offer.image || "");
-    setImageFile(null);
+    setGallery(offer.images || (offer.image ? [offer.image] : []));
     setDialog(true);
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
-    }
-  };
 
   const addItemRow = () => {
     setForm({
@@ -175,9 +164,9 @@ export default function OffersPage() {
     setSaving(true);
     try {
       if (editingOffer) {
-        await updateOffer(editingOffer.id, saved, imageFile || undefined);
+        await updateOffer(editingOffer.id, saved, gallery);
       } else {
-        await addOffer({ ...saved, image: "" }, imageFile || undefined);
+        await addOffer({ ...saved, image: "" }, gallery);
       }
       setDialog(false);
     } catch (err) {
@@ -411,41 +400,9 @@ export default function OffersPage() {
               </div>
             </div>
 
-            {/* Image Upload */}
             <div className="space-y-2">
-              <Label>{t.image}</Label>
-              <div className="flex items-center gap-4">
-                {imagePreview ? (
-                  <div className="relative w-24 h-24 rounded-lg overflow-hidden border">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      onClick={() => {
-                        setImagePreview("");
-                        setImageFile(null);
-                      }}
-                      className="absolute top-1 end-1 bg-destructive text-destructive-foreground rounded-full p-0.5">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="w-24 h-24 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
-                    <Upload className="w-5 h-5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground mt-1">
-                      {t.uploadImage}
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleImageChange}
-                    />
-                  </label>
-                )}
-              </div>
+              <Label>{t.images}</Label>
+              <ImageGalleryEditor images={gallery} onChange={setGallery} disabled={saving} />
             </div>
 
             {/* Offer Items */}
