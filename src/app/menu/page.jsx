@@ -438,24 +438,24 @@ export default function MenuPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div data-tour-page="menu" className="space-y-6 animate-fade-in">
       <h1 className="text-2xl font-bold">{t.menuTitle}</h1>
       {error && !itemDialog && <p role="alert" className="text-sm text-destructive">{error}</p>}
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="h-auto flex-wrap justify-start">
-          <TabsTrigger value="items">{t.menuItems}</TabsTrigger>
-          <TabsTrigger value="categories">{t.categories}</TabsTrigger>
-          <TabsTrigger value="ordering">{t.arrangeMenu}</TabsTrigger>
-          <TabsTrigger value="sizes">{t.sizeOptions}</TabsTrigger>
-          <TabsTrigger value="extras">{t.extrasOptions}</TabsTrigger>
-          <TabsTrigger value="allergies">{t.allergiesOptions}</TabsTrigger>
+          <TabsTrigger data-tour-tab="menu-items" value="items">{t.menuItems}</TabsTrigger>
+          <TabsTrigger data-tour-tab="menu-categories" value="categories">{t.categories}</TabsTrigger>
+          <TabsTrigger data-tour-tab="menu-ordering" value="ordering">{t.arrangeMenu}</TabsTrigger>
+          <TabsTrigger data-tour-tab="menu-sizes" value="sizes">{t.sizeOptions}</TabsTrigger>
+          <TabsTrigger data-tour-tab="menu-extras" value="extras">{t.extrasOptions}</TabsTrigger>
+          <TabsTrigger data-tour-tab="menu-allergies" value="allergies">{t.allergiesOptions}</TabsTrigger>
         </TabsList>
 
         {/* ─── Menu Items Tab ────────────────────────────── */}
-        <TabsContent value="items">
+        <TabsContent data-tour="menu-items" value="items">
           <div className="flex justify-end mb-4">
-            <Button onClick={openAddItem}>
+            <Button data-tour="menu-add" onClick={openAddItem}>
               <Plus className="w-4 h-4" />
               {t.addMenuItem}
             </Button>
@@ -580,7 +580,7 @@ export default function MenuPage() {
         </TabsContent>
 
         {/* ─── Categories Tab ────────────────────────────── */}
-        <TabsContent value="categories">
+        <TabsContent data-tour="menu-categories" value="categories">
           <div className="flex justify-end gap-2 mb-4">
             <Button variant="outline" onClick={() => arrange("categories")}>{t.arrangeCategories}</Button>
             <Button onClick={openAddCat}>
@@ -657,7 +657,7 @@ export default function MenuPage() {
         </TabsContent>
 
         {/* ─── Size Options Tab ──────────────────────────── */}
-        <TabsContent value="sizes">
+        <TabsContent data-tour="menu-sizes" value="sizes">
           <Card>
             <CardContent className="p-0">
               <Table>
@@ -743,7 +743,7 @@ export default function MenuPage() {
         </TabsContent>
 
         {/* ─── Extras Options Tab ────────────────────────── */}
-        <TabsContent value="extras">
+        <TabsContent data-tour="menu-extras" value="extras">
           <div className="flex justify-end mb-4">
             <Button onClick={openAddExt}>
               <Plus className="w-4 h-4" />
@@ -825,7 +825,7 @@ export default function MenuPage() {
         </TabsContent>
 
         {/* ─── Allergies Catalog Tab ─────────────────────── */}
-        <TabsContent value="allergies">
+        <TabsContent data-tour="menu-allergies" value="allergies">
           <div className="flex justify-end mb-4">
             <Button onClick={openAddAlg}>
               <Plus className="w-4 h-4" />
@@ -899,7 +899,7 @@ export default function MenuPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="ordering" forceMount className={activeTab === "ordering" ? "" : "hidden"}>
+        <TabsContent data-tour="menu-ordering" value="ordering" forceMount className={activeTab === "ordering" ? "" : "hidden"}>
           <CatalogOrderEditor categories={categories} items={items} target={orderTarget} onTargetChange={setOrderTarget} loading={itemsLoading || catsLoading} />
         </TabsContent>
       </Tabs>

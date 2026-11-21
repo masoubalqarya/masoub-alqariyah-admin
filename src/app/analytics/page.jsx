@@ -177,11 +177,11 @@ export default function AnalyticsPage() {
   }, [orders, t]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div data-tour-page="analytics" className="space-y-6 animate-fade-in">
       <h1 className="text-2xl font-bold">{t.analyticsTitle}</h1>
 
       {/* Date Range Filter */}
-      <div className="flex flex-wrap gap-2">
+      <div data-tour="analytics-period" className="flex flex-wrap gap-2">
         {["today", "week", "month", "custom"].map((range) => (
           <Button
             key={range}
@@ -225,7 +225,7 @@ export default function AnalyticsPage() {
       ) : (
         <>
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div data-tour="analytics-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -295,7 +295,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div data-tour="analytics-charts" className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Orders Over Time - Line Chart */}
             <Card>
               <CardHeader>

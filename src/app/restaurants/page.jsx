@@ -124,10 +124,10 @@ export default function RestaurantsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div data-tour-page="restaurants" className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t.restaurantsTitle}</h1>
-        <Button onClick={openAdd}>
+        <Button data-tour="restaurants-add" onClick={openAdd}>
           <Plus className="w-4 h-4" />
           {t.addRestaurant}
         </Button>
@@ -184,7 +184,7 @@ export default function RestaurantsPage() {
                 </div>
 
                 {/* Status Toggle - BIG AND VISIBLE */}
-                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border">
+                <div data-tour="restaurant-availability" className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border">
                   <span className="font-medium">
                     {restaurant.isActive ? t.open : t.closed}
                   </span>

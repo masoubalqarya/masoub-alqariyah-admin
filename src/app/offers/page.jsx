@@ -185,10 +185,10 @@ export default function OffersPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div data-tour-page="offers" className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t.offersTitle}</h1>
-        <Button onClick={openAdd}>
+        <h1 data-tour="offers-heading" className="text-2xl font-bold">{t.offersTitle}</h1>
+        <Button data-tour="offers-add" onClick={openAdd}>
           <Plus className="w-4 h-4" />
           {t.addOffer}
         </Button>

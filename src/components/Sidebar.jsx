@@ -15,24 +15,22 @@ import {
   Users,
   CalendarCheck,
   Settings,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { replayAdminWalkthrough } from "@/components/AdminWalkthrough";
+import { ADMIN_PAGES } from "@/lib/admin-guides";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
-  { href: "/", icon: LayoutDashboard, labelKey: "dashboard" },
-  { href: "/orders", icon: ShoppingCart, labelKey: "orders" },
-  { href: "/menu", icon: UtensilsCrossed, labelKey: "menu" },
-  { href: "/offers", icon: Tag, labelKey: "offers" },
-  { href: "/app-settings", icon: Settings, labelKey: "appSettings" },
-  { href: "/restaurants", icon: Store, labelKey: "restaurants" },
-  { href: "/users", icon: Users, labelKey: "users" },
-  { href: "/attendance", icon: CalendarCheck, labelKey: "attendance" },
-  { href: "/analytics", icon: BarChart3, labelKey: "analytics" },
-];
+const navIcons = {
+  dashboard: LayoutDashboard, orders: ShoppingCart, menu: UtensilsCrossed,
+  offers: Tag, "app-settings": Settings, restaurants: Store, users: Users,
+  attendance: CalendarCheck, analytics: BarChart3, help: BookOpen,
+};
+const navItems = ADMIN_PAGES.filter((page) => page.id !== "login")
+  .map((page) => ({ ...page, icon: navIcons[page.id] }));
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -61,7 +59,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav data-tour="sidebar-nav" className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const isActive =
             item.href === "/"
@@ -72,6 +70,8 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              data-tour={`nav-${item.id}`}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                 isActive
@@ -87,12 +87,13 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="px-3 py-4 border-t border-border space-y-2">
-        <Button variant="ghost" size="sm" className="w-full justify-start" onClick={replayAdminWalkthrough}>{t.replayWalkthrough}</Button>
+        <Button data-tour="replay-tour" variant="ghost" size="sm" className="w-full justify-start" onClick={replayAdminWalkthrough}>{t.replayWalkthrough}</Button>
         {/* Language toggle */}
         <Button
           variant="ghost"
           size="sm"
           className="w-full justify-start gap-3"
+          data-tour="language"
           onClick={() => setLocale(locale === "ar" ? "en" : "ar")}>
           <Globe className="w-5 h-5" />
           <span>{locale === "ar" ? "English" : "العربية"}</span>

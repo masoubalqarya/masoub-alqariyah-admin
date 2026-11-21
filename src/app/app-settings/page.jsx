@@ -39,7 +39,7 @@ function SettingsForm({ settings }) {
   };
   return <form onSubmit={save} className="space-y-6 max-w-3xl">
     <fieldset disabled={saving} className="space-y-6">
-      <Card>
+      <Card data-tour="app-hero">
         <CardHeader><CardTitle>{t.homeHero}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">{t.heroHelp}</p>
@@ -51,7 +51,7 @@ function SettingsForm({ settings }) {
           <ImageGalleryEditor images={gallery} onChange={setGallery} maxImages={1} disabled={saving} />
         </CardContent>
       </Card>
-      <Card>
+      <Card data-tour="app-updates">
         <CardHeader><CardTitle>{t.appUpdates}</CardTitle></CardHeader>
         <CardContent className="space-y-5">
           <p className="text-sm text-muted-foreground">{t.updatePolicyHelp}</p>
@@ -69,7 +69,7 @@ function SettingsForm({ settings }) {
         </CardContent>
       </Card>
       {feedback && <p role="status">{feedback}</p>}
-      <Button type="submit" disabled={saving}>{saving ? t.loading : t.save}</Button>
+      <Button data-tour="app-settings-save" type="submit" disabled={saving}>{saving ? t.loading : t.save}</Button>
     </fieldset>
   </form>;
 }
@@ -77,7 +77,7 @@ function SettingsForm({ settings }) {
 export default function AppSettingsPage() {
   const { t } = useI18n();
   const { settings, loading, error } = useAppSettings();
-  return <div className="space-y-6">
+  return <div data-tour-page="app-settings" className="space-y-6">
     <h1 className="text-2xl font-bold">{t.appSettings}</h1>
     {loading ? <p>{t.loading}</p> : error ? <p role="alert">{t.catalogLoadFailed}</p> : <SettingsForm settings={settings} />}
   </div>;

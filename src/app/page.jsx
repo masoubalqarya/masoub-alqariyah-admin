@@ -77,11 +77,11 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div data-tour-page="dashboard" className="space-y-6 animate-fade-in">
       <h1 className="text-2xl font-bold">{t.dashboard}</h1>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div data-tour="dashboard-stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {stats.map((stat) => (
           <Link key={stat.title} href={stat.href}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
@@ -105,7 +105,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Active Orders */}
-      <Card>
+      <Card data-tour="dashboard-recent">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>
             {locale === "ar"

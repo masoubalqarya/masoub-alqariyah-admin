@@ -329,7 +329,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div data-tour-page="users" className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -344,20 +344,20 @@ export default function UsersPage() {
 
       <Tabs defaultValue="users">
         <TabsList>
-          <TabsTrigger value="users">
+          <TabsTrigger data-tour-tab="users-users" value="users">
             <ShieldCheck className="w-4 h-4 me-2" />
             {t.users}
           </TabsTrigger>
-          <TabsTrigger value="employees">
+          <TabsTrigger data-tour-tab="users-employees" value="employees">
             <UserRoundCheck className="w-4 h-4 me-2" />
             {t.employees}
           </TabsTrigger>
         </TabsList>
 
         {/* Users Tab */}
-        <TabsContent value="users" className="space-y-4">
+        <TabsContent data-tour="users-users" value="users" className="space-y-4">
           {/* Filters */}
-          <div className="flex gap-3 flex-wrap">
+          <div data-tour="users-filters" className="flex gap-3 flex-wrap">
             <div className="relative flex-1 min-w-50 max-w-sm">
               <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -461,13 +461,13 @@ export default function UsersPage() {
         </TabsContent>
 
         {/* Employees Tab */}
-        <TabsContent value="employees" className="space-y-4">
+        <TabsContent data-tour="users-employees" value="employees" className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
               {t.employeeAttendanceHint}
             </p>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => setDemoConfirmOpen(true)} disabled={demoUploading || employeesLoading || !selectedMorningShiftId}>
+              <Button data-tour="attendance-demo" variant="outline" onClick={() => setDemoConfirmOpen(true)} disabled={demoUploading || employeesLoading || !selectedMorningShiftId}>
                 {demoUploading ? <Loader2 className="w-4 h-4 me-2 animate-spin" /> : <Database className="w-4 h-4 me-2" />}
                 {t.uploadDemoAttendance}
               </Button>

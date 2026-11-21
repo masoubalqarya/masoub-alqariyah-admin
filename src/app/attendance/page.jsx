@@ -596,7 +596,7 @@ export default function AttendancePage() {
   }));
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div data-tour-page="attendance" className="space-y-6 animate-fade-in">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <CalendarCheck className="w-7 h-7 text-primary" />
@@ -622,12 +622,12 @@ export default function AttendancePage() {
         }}
         className="space-y-5">
         <TabsList>
-          <TabsTrigger value="daily">{t.dailyAttendance}</TabsTrigger>
-          <TabsTrigger value="monthly">{t.monthlyReport}</TabsTrigger>
-          <TabsTrigger value="settings">{t.attendanceSettings}</TabsTrigger>
+          <TabsTrigger data-tour-tab="attendance-daily" value="daily">{t.dailyAttendance}</TabsTrigger>
+          <TabsTrigger data-tour-tab="attendance-monthly" value="monthly">{t.monthlyReport}</TabsTrigger>
+          <TabsTrigger data-tour-tab="attendance-settings" value="settings">{t.attendanceSettings}</TabsTrigger>
         </TabsList>
-        <TabsContent value="daily" className="space-y-5">
-          <div className="flex items-center gap-3">
+        <TabsContent data-tour="attendance-daily" value="daily" className="space-y-5">
+          <div data-tour="attendance-date" className="flex items-center gap-3">
             <Label>{t.selectedDate}</Label>
             <Input
               type="date"
@@ -639,7 +639,7 @@ export default function AttendancePage() {
               }
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div data-tour="attendance-reference" className="grid gap-4 sm:grid-cols-3">
             <Card>
               <CardContent className="p-5">
                 <p className="text-sm text-muted-foreground">{t.prayerTimes}</p>
@@ -766,8 +766,8 @@ export default function AttendancePage() {
             onSelect={selectDaily}
           />
         </TabsContent>
-        <TabsContent value="monthly" className="space-y-5">
-          <details className="rounded-lg border p-3">
+        <TabsContent data-tour="attendance-monthly" value="monthly" className="space-y-5">
+          <details data-tour="attendance-report" className="rounded-lg border p-3">
             <summary className="cursor-pointer font-medium">{t.reportEmployees} ({reportEmployees.length})</summary>
             <div className="mt-3 flex flex-wrap gap-3">
               <Button variant="outline" size="sm" onClick={() => setReportEmployeeIds(null)}>{t.selectAllEmployees}</Button>
@@ -836,7 +836,7 @@ export default function AttendancePage() {
             />
           )}
         </TabsContent>
-        <TabsContent value="settings">
+        <TabsContent data-tour="attendance-settings" value="settings">
           <AttendanceSettings shifts={shifts} settings={settings} />
         </TabsContent>
       </Tabs>

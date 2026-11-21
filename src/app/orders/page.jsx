@@ -119,12 +119,12 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div data-tour-page="orders" className="space-y-6 animate-fade-in">
       {actionError && <p role="alert" className="text-destructive">{actionError}</p>}
       <h1 className="text-2xl font-bold">{t.ordersTitle}</h1>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4">
+      <div data-tour="orders-filters" className="flex flex-wrap gap-4">
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder={t.filterByStatus} />
@@ -259,7 +259,7 @@ export default function OrdersPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-2 p-4 border-t bg-muted/20">
                     {/* View Details */}
-                    <Button
+                    <Button data-tour="order-details"
                       variant="ghost"
                       size="sm"
                       onClick={() => setSelectedOrder(order)}>
@@ -268,7 +268,7 @@ export default function OrdersPage() {
 
                     {/* Advance Status */}
                     {nextStatus && (
-                      <Button
+                      <Button data-tour="order-advance"
                         size="sm"
                         disabled={isLoading}
                         onClick={() => handleAdvanceStatus(order)}
@@ -289,7 +289,7 @@ export default function OrdersPage() {
                       </Button>
                     )}
 
-                    {order.status !== "cancelled" && <Button variant="outline" size="sm" disabled={isLoading} onClick={() => setSelectedOrder(order)}>{t.editOrCancelOrder}</Button>}
+                    {order.status !== "cancelled" && <Button data-tour="order-edit" variant="outline" size="sm" disabled={isLoading} onClick={() => setSelectedOrder(order)}>{t.editOrCancelOrder}</Button>}
                   </div>
                 </CardContent>
               </Card>

@@ -376,6 +376,12 @@ Menu ? Arrange menu provides drag handles and up/down controls for category, per
 
 Customer checkout is cash-only; online payment is informational. Customers/branch cashiers can edit quantities, notes and car details or cancel during the first 60 seconds before preparation. Active admins can correct/cancel later with a reason and immutable before/after history. The shared callables enforce ownership, branch, timing, revisions and print fences; direct client order updates are denied by the synchronized rules. Prepared-order edits require staff review and an explicit audited reprint.
 
-Attendance supports manual shift starts while keeping prayer references. Monthly dates default to today and one calendar month earlier; employee/date filters apply equally to the table and XLSX export. Exports contain summaries, calculated attendance, raw punches, delays and deduction minutes; no monetary rate is invented. A skippable walkthrough is replayable from the sidebar.
+Attendance supports manual shift starts while keeping prayer references. Monthly dates default to today and one calendar month earlier; employee/date filters apply equally to the table and XLSX export. Exports contain summaries, calculated attendance, raw punches, delays and deduction minutes; no monetary rate is invented.
+
+## Walkthrough and Help center
+
+The sidebar's **Help center** opens `/help`, with Arabic/English instructions for sign-in and every admin page. Search by task or page, filter by category, expand instructions, and review troubleshooting. Guides link directly to the working pages. The Help center uses the same administrator access protection as the rest of the panel.
+
+The React Joyride walkthrough highlights actual controls through 42 steps across all eleven page topics. It visits the working pages and opens the appropriate tabs automatically. Arabic/English tooltips include chapter selection, progress, previous/next and full-guide links. Skip, close or press Escape to stop; the tour never submits forms or runs operational actions. If a page cannot load, it offers retry/help instead of leaving a stuck overlay. Replay the full walkthrough from the sidebar or Help center, or start at an individual guide. First-time admins see it automatically; existing completion/skip preferences are preserved per account in this browser. Guidance is local content and does not change business data. React Joyride 3.2.0 is installed through the existing npm lockfile. Focused tour checks: `node src/lib/admin-tour.test.mjs`.
 
 Source changes do not deploy services or rules. Review the shared callable/rules/client rollout together when authorized. No builds, deployments, live changes or hardware acceptance were performed. See AGENTS.md for the contract and device limits.
